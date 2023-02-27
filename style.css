@@ -1,0 +1,28 @@
+body {
+    background-color: black;
+    color: white;
+    font-family: 'Quantico', sans-serif;
+}
+
+#terminal-output {
+    padding-left: 2px;
+}
+  
+#terminal-input {
+    display: flex;
+    align-items: flex-end;
+}
+  
+input[type="text"] {
+    padding-top: 0px;
+    font-size: 16px;
+    background-color: transparent;
+    border: none;
+    color: #fff;
+    font-family: 'Quantico', sans-serif;
+    width: 100%;
+}
+
+#terminal-command {
+    outline: none;
+}
