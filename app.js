@@ -1,8 +1,8 @@
 let currentRoom = null;
 let rooms = [];
-let inventory = [];
+let inventory = ["sword"];
 let prevword = null;
-let dictionary = ["go","north","east","south","west"];
+let dictionary = ["go","north","east","south","west","attack"];
 
 /** 
  * 
@@ -10,20 +10,33 @@ let dictionary = ["go","north","east","south","west"];
 class Room {
     location;
     description;
-    entities = [];
+    components = [];
     actions = [];
     constructor(location) {
         this.location = location;
-        this.actions.pop("go");
     }
 }
-class Entity {
+class Component {
+    actions = [];
+    responses = [];
+    name;
+    constructor(name) {
+        this.name = name;
+    }
+}
 
+function equals(element, name) {
+    return element.name === name;
 }
 
 function initializeRooms() {
     start = new Room("Beginner road");
     start.description = "There's a trail from east to west, but the trail to the west seems lead to nothing.";
+    sword = new Component("sword");
+    start.components.push(sword);
+    goblin = new Component("goblin");
+    start.components.push(goblin);
+    start.actions.push("attack");
     rooms.push(start);
     currentRoom = start;
     // nothing = new Room("Nothing","There's nothing past this point. Must be a bug.");
@@ -31,6 +44,8 @@ function initializeRooms() {
     // rooms.push(beginnerfork);
     // connectRooms(start, nothing, "W", "E");
 }
+
+
 /** 
  * A sentence is structured as follows:
  * verb subject item.
@@ -43,10 +58,46 @@ function initializeRooms() {
 function parse(sentence) {
     sentence.toLowerCase();
     const words = sentence.split(" ");
-    const word = words[0];
-    words.splice(0, 1);
-    subject = words.join(" ");
+    let verb;
+    let component1;
+    let component2;
+    let i = 0;
+    for (; i < words.length; i++) {
+        if (dictionary.includes(words[i])) {
+            verb = words[i];
+            i++;
+            break;
+        }
+    }
 
+    for (; i < words.length; i++) {
+        if (currentRoom.components.some(component => component.name === words[i]) || inventory.includes(words[i])) {
+            console.log(i);
+            component1 = words[i];
+            i++;
+            break;
+        }
+    }
+  
+    for (; i < words.length; i++) {
+        if (currentRoom.components.some(component => component.name === words[i]) || inventory.includes(words[i])) {
+            component2 = words[i];
+            break;
+        }
+    }
+    if (verb == null) {                                                     //There is no verb in this sentence.
+        if (!dictionary.includes(prevword)) {                               //There is no verb previously mentioned
+            if (component1 != null) {
+                prevword == component1;
+            }
+        }
+    }
+    console.log(verb);
+    console.log(component1);
+    console.log(component2);
+    if (verb != null && component1 != null && component2 != null) {
+        outputText(`You ${verb} ${component1} with ${component2}`);
+    }
     //Might come back to.
     // if (words.length == 0) {                                            //There is only one word
     //     console.log("1 word")
@@ -86,8 +137,6 @@ function parse(sentence) {
     //     }
     // }
 }
-
-
 /**
  * The handleAction function takes in an action and subject. 
  * If the subject is null, the function deviates to actions that are possible without a subject. 
@@ -142,8 +191,6 @@ const terminalOutput = document.getElementById("terminal-output");
 const terminalCommand = document.getElementById("terminal-command");
 
 terminalCommand.addEventListener("keydown", e => checkEnter(e));
-
-
 
 function checkEnter(k) {
     if (k.keyCode==13) {
