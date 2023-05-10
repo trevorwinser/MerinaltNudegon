@@ -1,12 +1,12 @@
 let currentRoom = null;
 let rooms = [];
 let inventory = ["sword"];
-let prevword = null;
+let previous_verb = null;
+let previous_component1 = null;
+let previous_component2 = null;
 let dictionary = ["go","north","east","south","west","attack"];
 
-/** 
- * 
-*/
+
 class Room {
     location;
     description;
@@ -16,12 +16,22 @@ class Room {
         this.location = location;
     }
 }
+
 class Component {
     actions = [];
     responses = [];
     name;
-    constructor(name) {
+    val1;
+    val2;
+    val3;
+    constructor(name, val1, val2, val3) {
         this.name = name;
+        if (val1 == null) val1 = 0;
+        else this.val1 = val1;
+        if (val2 == null) val2 = 0;
+        else this.val2 = val2;
+        if (val3 == null) val3 = 0;
+        else this.val3 = val3;
     }
 }
 
@@ -42,7 +52,6 @@ function initializeRooms() {
     // nothing = new Room("Nothing","There's nothing past this point. Must be a bug.");
     // beginnerfork = new Room("A fork in the road connects to a road that leads north, and ");
     // rooms.push(beginnerfork);
-    // connectRooms(start, nothing, "W", "E");
 }
 
 
@@ -85,88 +94,68 @@ function parse(sentence) {
             break;
         }
     }
-    if (verb == null) {                                                     //There is no verb in this sentence.
-        if (!dictionary.includes(prevword)) {                               //There is no verb previously mentioned
-            if (component1 != null) {
-                prevword == component1;
-            }
-        }
-    }
     console.log(verb);
     console.log(component1);
     console.log(component2);
     if (verb != null && component1 != null && component2 != null) {
-        outputText(`You ${verb} ${component1} with ${component2}`);
+        handleAction(verb, component1, component2);
+    } else if (verb != null && component1 != null) {
+        handleAction(verb, component1);
+    } else if (verb != null) {
+        handleAction(verb);
+    } else if (previous_verb != null) {
+        if (component1 != null && component2 != null) {
+            handleAction(previous_verb, component1, component2);
+        } else if (component1 != null) {
+            handleAction(previous_verb, component1);
+        } else {
+            outputText("I'm sorry, I don't understand.")
+        }
+    } else {
+        outputText("I'm sorry, I don't understand.")
     }
-    //Might come back to.
-    // if (words.length == 0) {                                            //There is only one word
-    //     console.log("1 word")
-    //     if (dictionary.includes(word)) {                                //The word is an action
-    //         console.log("word is action");
-    //         if (prevword != null) {
-    //             if (currentRoom.entities.includes(prevword)) {          //The previous word is an entity in the room
-    //                 parse(word.concat(" ", prevword));
-    //             } else if (currentRoom.actions.includes(word)) {        //The previous word is not an entity, so check if it is an acceptable action
-    //                 if (!handleAction(word, null)) {                    //Checks if action needs a subject
-    //                 prevword = word;
-    //                 promptSubject(word);
-    //                 }
-    //             } else {
-    //                 outputText("You cannot do that here.")
-    //             }
-    //         } else if (!handleAction(word, null)) {                    //Checks if action needs a subject
-    //             prevword = word;
-    //             promptSubject(word);
-    //         }
-    //     } else if (currentRoom.objects.includes(word)) {                //The word is an object
-    //         if (prevword != null) {
-    //             if (currentRoom.actions.includes(prevword)) {           //The previous word is an action
-    //                 if (!handleAction(prevword, word)) {                //The action is not acceptable on the subject
-    //                     prevword = word;
-    //                     promptAction(word);
-    //                 }
-    //             }
-    //         } else {                                                    //Prompt an action
-    //             outputText(`What do you want to do with ${word}`);
-    //         }
-    //     } else if (currentRoom.objects.includes(subject) && currentRoom.actions.includes(word)) {
-    //         prevword = null;
-    //         handleAction(word, subject);
-    //     } else {
-    //         outputText("I'm sorry. I don't understand.");
-    //     }
-    // }
+}
+
+/**
+ * This variation of handleAction accepts only a verb.
+ * Only actions that require no components will be handled, otherwise
+ * an error is reported to the user.
+ */
+function handleAction(verb) {
+    switch(verb) {
+        case 'go':
+            promptDirection();
+        break;
+        case 'east':
+        break;
+    }
 }
 /**
- * The handleAction function takes in an action and subject. 
- * If the subject is null, the function deviates to actions that are possible without a subject. 
- * Otherwise, the function operates assuming there is a valid subject to act on. 
- * Current implementation does not know whether actions are possible on specific objects.
+ * This variation of handleAction accepts a verb and one component
+ * Only actions that require one component will be handled, otherwise
+ * an error is reported to the user.
  */
-function handleAction(action, subject) {
-    return false;
-    switch (action) {
-        case 'go':
-            outputText("Where do you want to go?");
-            break;
-        case currentRoom.possileDirections.includes(action):
+function handleAction(verb, component1) {
 
-            break;
-    }
+}
+/**
+ * This variation of handleAction accepts a verb and two components.
+ * Only actions that require two components will be handled, otherwise 
+ * an error is reported to the user.
+ */
+function handleAction(verb, component1, component2) {
+
 }
 
-//IMPORTANT: To use ${variable} you must use `` not '' or ""
-function promptAction(subject) {
-    str = `What do you want to do with ${subject}?`;
-    outputText(str);
+
+function attack(verb, component1, component2) {
+    outputText(`You ${verb} ${component1} with ${component2}`);
 }
-function promptSubject(action) {
-    switch (action) {
-        case 'go':
-            outputText("You need to specify a compass direction.")
-    }
-}
-//Implement later
+
+
+
+
+//Implement WIP
 function connectRooms(x, y, xdir, ydir) {
     x.connectedRooms.push(y);
     x.possibleDirections.push(xdir)
@@ -184,7 +173,7 @@ function outputText(txt) {
 
 window.onload = (event) => {
     initializeRooms();
-    outputText("Sample text");
+    outputText("There's a trail from east to west, but the trail to the west seems lead to nothing.");
 };
 
 const terminalOutput = document.getElementById("terminal-output");
