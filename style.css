@@ -1,6 +1,6 @@
 body {
     background-color: black;
-    color: white;
+    color: #fff;
     font-family: 'Quantico', sans-serif;
 }
 
@@ -25,4 +25,14 @@ input[type="text"] {
 
 #terminal-command {
     outline: none;
+}
+#location {
+    position: fixed;
+    padding-right: 16px;
+    top: 16px;
+    right: 0;
+    background-color: transparent;
+    border: none;
+    color: #fff;
+    font-family: 'Quantico', sans-serif;
 }

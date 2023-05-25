@@ -4,14 +4,15 @@ let inventory = ["sword"];
 let previous_verb = null;
 let previous_component1 = null;
 let previous_component2 = null;
-let dictionary = ["go","north","east","south","west","attack"];
-
+let dictionary = ["go","walk","run","north","northeast","east","southeast","south","southwest","west","northwest","attack","look"];
 
 class Room {
     location;
-    description;
+    description = "";
     components = [];
     actions = [];
+    connectedRooms = [];
+    directions = [];    //corresponds to the direction of connected rooms.
     constructor(location) {
         this.location = location;
     }
@@ -40,13 +41,15 @@ function equals(element, name) {
 }
 
 function initializeRooms() {
-    start = new Room("Beginner road");
+    start = new Room("North Road");
     start.description = "There's a trail from east to west, but the trail to the west seems lead to nothing.";
     sword = new Component("sword");
     start.components.push(sword);
     goblin = new Component("goblin");
     start.components.push(goblin);
-    start.actions.push("attack");
+    nothing = new Room("Nothing");
+    nothing.description = "You see nothing beyond this point. You should probably head back.";
+    connectRooms(start, nothing, "west", "east");
     rooms.push(start);
     currentRoom = start;
     // nothing = new Room("Nothing","There's nothing past this point. Must be a bug.");
@@ -80,17 +83,18 @@ function parse(sentence) {
     }
 
     for (; i < words.length; i++) {
-        if (currentRoom.components.some(component => component.name === words[i]) || inventory.includes(words[i])) {
-            console.log(i);
-            component1 = words[i];
+        let temp = words[i];
+        if (currentRoom.components.some(component => component.name === temp) || inventory.includes(temp) || dictionary.includes(temp)) {
+            component1 = temp;
             i++;
             break;
         }
     }
   
     for (; i < words.length; i++) {
-        if (currentRoom.components.some(component => component.name === words[i]) || inventory.includes(words[i])) {
-            component2 = words[i];
+        let temp = words[i]
+        if (currentRoom.components.some(component => component.name === temp) || inventory.includes(temp)) {
+            component2 = temp;
             break;
         }
     }
@@ -98,17 +102,17 @@ function parse(sentence) {
     console.log(component1);
     console.log(component2);
     if (verb != null && component1 != null && component2 != null) {
-        handleAction(verb, component1, component2);
+        handleVerbSubject1Subject2(verb, component1, component2);
     } else if (verb != null && component1 != null) {
-        handleAction(verb, component1);
+        handleVerbSubject(verb, component1);
     } else if (verb != null) {
-        handleAction(verb);
+        handleVerb(verb);
     } else if (previous_verb != null) {
         if (component1 != null && component2 != null) {
-            handleAction(previous_verb, component1, component2);
+            handleAction1(previous_verb, component1, component2);
         } else if (component1 != null) {
-            handleAction(previous_verb, component1);
-        } else {
+            handleAction2(previous_verb, component1);
+        } else {                                            //There is never a case where handleAction3(previous_verb) should happen.
             outputText("I'm sorry, I don't understand.")
         }
     } else {
@@ -121,12 +125,46 @@ function parse(sentence) {
  * Only actions that require no components will be handled, otherwise
  * an error is reported to the user.
  */
-function handleAction(verb) {
+function handleVerb(verb) {
     switch(verb) {
-        case 'go':
+        case "go":
             promptDirection();
         break;
-        case 'east':
+        case "walk":
+            promptDirection();
+        break;
+        case "run":
+            promptDirection();
+        break;
+        case "north":
+            handleDirection("north");
+        break;
+        case "northeast":
+            handleDirection("northeast");
+        break;
+        case "east":
+            handleDirection("east");
+        break;
+        case "southeast":
+            handleDirection("southeast");
+        break;
+        case "south":
+            handleDirection("south");
+        break;
+        case "southwest":
+            handleDirection("southwest");
+        break;
+        case "west":
+            handleDirection("west");
+        break;
+        case "northwest":
+            handleDirection("northwest");
+        break;
+        case "look":
+            look();
+        break
+        default:
+            promptSubject(verb);
         break;
     }
 }
@@ -135,32 +173,61 @@ function handleAction(verb) {
  * Only actions that require one component will be handled, otherwise
  * an error is reported to the user.
  */
-function handleAction(verb, component1) {
+function handleVerbSubject(verb, component1) {
+    switch(verb) {
+        case "go":
+            handleDirection(component1);
+        break;
+        case "walk":
+            
+        break;
+        case "run":
 
+        break;
+    }
 }
 /**
  * This variation of handleAction accepts a verb and two components.
  * Only actions that require two components will be handled, otherwise 
  * an error is reported to the user.
  */
-function handleAction(verb, component1, component2) {
+function handleVerbSubject1Subject2(verb, component1, component2) {
+    switch(verb) {
 
+    }
 }
 
+function handleDirection(direction) {
+    if(!currentRoom.directions.some(dir => {if(dir == direction) {index = currentRoom.directions.indexOf(direction);go(index); return true;}}))
+        outputText("You can't go that direction");
+}
+
+function go(index) {
+    currentRoom = currentRoom.connectedRooms[index];
+    outputText(currentRoom.location);
+    outputText(currentRoom.description);
+    topRightElement.textContent = currentRoom.location;
+}
+
+function look() {
+    outputText(currentRoom.description);
+}
 
 function attack(verb, component1, component2) {
     outputText(`You ${verb} ${component1} with ${component2}`);
 }
 
+function promptDirection() {
+    outputText("Which direction do you want to go?");
+}
+function promptSubject(verb) {
+}
 
-
-
-//Implement WIP
 function connectRooms(x, y, xdir, ydir) {
     x.connectedRooms.push(y);
-    x.possibleDirections.push(xdir)
+    x.directions.push(xdir)
     y.connectedRooms.push(x);
-    y.possibleDirections.push(ydir)
+    y.directions.push(ydir)
 }
 
 function outputText(txt) {
@@ -176,8 +243,13 @@ window.onload = (event) => {
     outputText("There's a trail from east to west, but the trail to the west seems lead to nothing.");
 };
 
+
+
 const terminalOutput = document.getElementById("terminal-output");
 const terminalCommand = document.getElementById("terminal-command");
+const topRightElement = document.getElementById("location");
+
+topRightElement.textContent = "North Road";
 
 terminalCommand.addEventListener("keydown", e => checkEnter(e));
 
