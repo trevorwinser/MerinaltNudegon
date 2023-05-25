@@ -41,8 +41,8 @@ function equals(element, name) {
 }
 
 function initializeRooms() {
-    start = new Room("North Road");
-    start.description = "There's a trail from east to west, but the trail to the west seems lead to nothing.";
+    start = new Room("Brooke Road");
+    start.description = "The road to the east looks promising, but there's nothing to the west ";
     sword = new Component("sword");
     start.components.push(sword);
     goblin = new Component("goblin");
@@ -52,9 +52,16 @@ function initializeRooms() {
     connectRooms(start, nothing, "west", "east");
     rooms.push(start);
     currentRoom = start;
-    // nothing = new Room("Nothing","There's nothing past this point. Must be a bug.");
-    // beginnerfork = new Room("A fork in the road connects to a road that leads north, and ");
-    // rooms.push(beginnerfork);
+    beginnerFork = new Room("Fork in the Road");
+    beginnerFork.description = "A fork in the road has two trails. One heads northeast, and the other goes from east to west";
+    rooms.push(beginnerFork);
+    connectRooms(beginnerFork, start, "west", "east");
+    goblinDoor = new Room("Mysterious Door");
+    goblinDoor.description = "A big wooden door that seems to be locked.";
+    connectRooms(beginnerFork, goblinDoor, "northeast", "southwest");
+    continuedRoad = new Room("Brooke Road");
+    continuedRoad.description = "";
+    connectRooms(beginnerFork, continuedRoad, "east", "west");
 }
 
 
@@ -240,7 +247,7 @@ function outputText(txt) {
 
 window.onload = (event) => {
     initializeRooms();
-    outputText("There's a trail from east to west, but the trail to the west seems lead to nothing.");
+    outputText(currentRoom.description);
 };
 
 
