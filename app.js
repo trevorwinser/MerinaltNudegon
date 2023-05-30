@@ -4,7 +4,7 @@ let inventory = ["sword"];
 let previous_verb = null;
 let previous_component1 = null;
 let previous_component2 = null;
-let dictionary = ["go","walk","run","north","northeast","east","southeast","south","southwest","west","northwest","attack","look"];
+let dictionary = ["climb","jump","go","walk","run","north","northeast","east","southeast","south","southwest","west","northwest","attack","look"];
 
 class Room {
     location;
@@ -127,6 +127,11 @@ function parse(sentence) {
     }
 }
 
+//If list comparisons get to be too annoying, I will implement this
+function getFromList(list) {
+
+}
+
 /**
  * This variation of handleAction accepts only a verb.
  * Only actions that require no components will be handled, otherwise
@@ -169,7 +174,13 @@ function handleVerb(verb) {
         break;
         case "look":
             look();
-        break
+        break;
+        case "jump":
+            jump();
+        break;
+        case "climb":
+            climb();
+        break;
         default:
             promptSubject(verb);
         break;
@@ -220,8 +231,23 @@ function look() {
     outputText(currentRoom.description);
 }
 
-function attack(verb, component1, component2) {
-    outputText(`You ${verb} ${component1} with ${component2}`);
+function jump() {
+    outputText("Wheeeeee!");
+}
+
+//In order to connect rooms that require climbing, up and down must be valid directions. However, they must only work when paired with climb
+function climb() {
+    outputText("Where do you want to climb?");
+}
+/**
+ * Attacking something requires a few things:
+ * 1. The thing you are attacking must have health
+ * 2. The thing you are attacking with must be in your inventory
+ * The calculation for damage is as follows: if (damage > defense) health = health - (defense - damage)
+ */
+
+function attack(component1, component2) {
+
 }
 
 function promptDirection() {
