@@ -73,7 +73,7 @@ function initializeRooms() {
     wildField3.description = "A trail that leads towards the mountains is northeast from here."
     wildField4 = new Room("Wild Fields");
     wildField5 = new Room("Wild Fields");
-    wildField5.description = "This vast meadow goes on for a while. It may be hard to know where you're going from here, so mapping it out might help."
+    wildField5.description = "This vast meadow goes on for a while. It may be hard to know where you're going from here, so mapping it out might help.";
     wildField6 = new Room("Wild Fields");
     wildField7 = new Room("Wild Fields");
     wildField7.description = "The field spreads far in every direction."
@@ -83,11 +83,13 @@ function initializeRooms() {
     wildField11 = new Room("Wild Fields");
     wildField12 = new Room("Wild Fields");
     grandTree = new Room("Grand Tree");
-    grandTree.description = "The grand tree soars to towering heights, its branches reaching outward, while its mighty trunk radiates a mesmerizing glow."
+    grandTree.description = "The grand tree soars to towering heights, its branches reaching outward, while its mighty trunk radiates a mesmerizing glow.";
     largeBranch = new Room("Large Branch");
-    largeBranch.description = "This branch is plenty sturdy. From here, you can see the entire field from here. Going up might make allow you to see further."
+    largeBranch.description = "This branch is plenty sturdy. From here, you can see the entire field from here. Going up might make allow you to see further.";
+    connectRooms(grandTree, largeBranch, "up", "down");
     appleBranch = new Room("Weak Branch");
     appleBranch.description = "As you reach this point on the tree, you spot a shimmering apple. Will you grab it?";
+    connectRooms(largeBranch, appleBranch, "up", "down");
     wildField13 = new Room("Wild Fields");
     wildField14 = new Room("Wild Fields");
     wildField15 = new Room("Wild Fields");
@@ -96,7 +98,90 @@ function initializeRooms() {
     wildField18 = new Room("Wild Fields");
     wildField19 = new Room("Wild Fields");
     wildField20 = new Room("Wild Fields");
+    beach1 = new Room("Beach");
+    beach1.description = "This coast consists of various shells and colorful rocks.";
+    beach2 = new Room("Beach");
+    beach3 = new Room("Beach");
+    beach4 = new Room("Beach");
+    beach5 = new Room("Beach");
+    beach6 = new Room("Beach");
     connectRooms(starterRoad2, wildField5, "east", "west");
+    connectRooms(wildField1, wildField2, "east", "west");
+    connectRooms(wildField2, wildField3, "east", "west");
+    connectRooms(wildField3, wildField4, "east", "west");
+    connectRooms(wildField5, wildField6, "east", "west");
+    connectRooms(wildField6, wildField7, "east", "west");
+    connectRooms(wildField7, wildField8, "east", "west");
+    connectRooms(wildField8, wildField9, "east", "west");
+    connectRooms(wildField9, wildField10, "east", "west");
+    connectRooms(wildField10, beach1, "east", "west");
+    connectRooms(wildField11, wildField12, "east", "west");
+    connectRooms(wildField12, grandTree, "east", "west");
+    connectRooms(grandTree, wildField13, "east", "west");
+    connectRooms(wildField13, wildField14, "east", "west");
+    connectRooms(wildField14, beach2, "east", "west");
+    connectRooms(wildField15, wildField16, "east", "west");
+    connectRooms(wildField16, wildField17, "east", "west");
+    connectRooms(wildField17, wildField18, "east", "west");
+    connectRooms(wildField18, beach3, "east", "west");
+    connectRooms(wildField19, wildField20, "east", "west");
+    connectRooms(wildField20, beach4, "east", "west");
+    connectRooms(beach5, beach6, "east", "west");
+
+    connectRooms(wildField1, wildField6, "south", "north");
+    connectRooms(wildField2, wildField7, "south", "north");
+    connectRooms(wildField3, wildField8, "south", "north");
+    connectRooms(wildField4, wildField9, "south", "north");
+    connectRooms(wildField6, wildField11, "south", "north");
+    connectRooms(wildField7, wildField12, "south", "north");
+    connectRooms(wildField8, grandTree, "south", "north");
+    connectRooms(wildField9, wildField13, "south", "north");
+    connectRooms(wildField10, wildField14, "south", "north");
+    connectRooms(beach1, beach2, "south", "north");
+    connectRooms(wildField11, wildField15, "south", "north");
+    connectRooms(wildField12, wildField16, "south", "north");
+    connectRooms(grandTree, wildField17, "south", "north");
+    connectRooms(wildField13, wildField18, "south", "north");
+    connectRooms(wildField14, beach3, "south", "north");
+    connectRooms(wildField16, wildField19, "south", "north");
+    connectRooms(wildField17, wildField20, "south", "north");
+    connectRooms(wildField18, beach4, "south", "north");
+    connectRooms(wildField19, beach5, "south", "north");
+    connectRooms(wildField20, beach6, "south", "north");
+
+    
+    connectRooms(wildField5, wildField1, "northeast", "southwest");
+    connectRooms(wildField6, wildField2, "northeast", "southwest");
+    connectRooms(wildField7, wildField3, "northeast", "southwest");
+    connectRooms(wildField8, wildField4, "northeast", "southwest");
+    connectRooms(wildField11, wildField7, "northeast", "southwest");
+    connectRooms(wildField12, wildField8, "northeast", "southwest");
+    connectRooms(grandTree, wildField9, "northeast", "southwest");
+    connectRooms(wildField13, wildField10, "northeast", "southwest");
+    connectRooms(wildField14, beach1, "northeast", "southwest");
+    connectRooms(beach3, beach2, "northeast", "southwest");
+    connectRooms(beach4, beach3, "northeast", "southwest");
+    connectRooms(beach5, wildField20, "northeast", "southwest");
+    connectRooms(beach6, beach4, "northeast", "southwest");
+
+    connectRooms(wildField1, wildField7, "southeast", "northwest");
+    connectRooms(wildField2, wildField8, "southeast", "northwest");
+    connectRooms(wildField3, wildField9, "southeast", "northwest");
+    connectRooms(wildField4, wildField10, "southeast", "northwest");
+    connectRooms(wildField5, wildField11, "southeast", "northwest");
+    connectRooms(wildField6, wildField12, "southeast", "northwest");
+    connectRooms(wildField7, grandTree, "southeast", "northwest");
+    connectRooms(wildField8, wildField13, "southeast", "northwest");
+    connectRooms(wildField9, wildField14, "southeast", "northwest");
+    connectRooms(wildField10, beach2, "southeast", "northwest");
+    connectRooms(wildField11, wildField16, "southeast", "northwest");
+    connectRooms(wildField12, wildField17, "southeast", "northwest");
+    connectRooms(grandTree, wildField18, "southeast", "northwest");
+    connectRooms(wildField13, beach3, "southeast", "northwest");
+    connectRooms(wildField15, wildField19, "southeast", "northwest");
+    connectRooms(wildField16, wildField20, "southeast", "northwest");
+    connectRooms(wildField17, beach4, "southeast", "northwest");
+    connectRooms(wildField19, beach6, "southeast", "northwest");
 }
 
 // function get(list, item) {
@@ -126,7 +211,7 @@ function parse(words) {
     if (previous_verb != null) {
         words.splice(0, 0,previous_verb);
     }
-    checkSyntax(words)
+    checkSyntax(words);
 }
 function checkSyntax(words) {
     verb = words[0];
@@ -269,6 +354,8 @@ function handleClimb(words) {
             else {
                 handleDirection(direction);
             }
+        } else {
+            outputText("I only understood you as far as climb");
         }
     }
     
