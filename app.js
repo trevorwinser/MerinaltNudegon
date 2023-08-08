@@ -4,8 +4,8 @@ let inventory = [];
 let previous_verb = null;
 let previous_component1 = null;
 let previous_component2 = null;
-let dictionary = ["attack","look","jump","grab"];
-let movementDictionary = ["climb","go","walk","run","north","northeast","east","southeast","south","southwest","west","northwest","up","down"];
+let dictionary = ["attack","look","jump","grab","pick","drop", "inventory"];
+let movementDictionary = ["climb","go","walk","run","travel","north","northeast","east","southeast","south","southwest","west","northwest","up","down"];
 dictionary = dictionary.concat(movementDictionary);
 let basicDictionary = dictionary;
 
@@ -30,6 +30,8 @@ class CustomRoom extends Room {
     constructor(location) {
         super(location);
     }
+    altDescription = "";
+
 }
 
 class Component {
@@ -44,20 +46,35 @@ class Component {
 class Entity extends Component {
     health;
     strength;
-    defense;
+    attackTime;
+    turnsInteracted;
+    dialogue;
+    constructor(name,health, strength, attackTime) {
+        super(name);
+        this.health = health;
+        this.strength = strength;
+        this.attackTime = attackTime;
+    }
+    
 }
 
 class Item extends Component {
     damage;
+    constructor(name, damage) {
+        super(name);
+        this.damage = damage;
+    }
 }
 
 function initializeRooms() {
     starterRoad1 = new Room("Brooke Road");
     starterRoad1.description = "The road to the east looks promising, but there's nothing to the west.";
+    currentRoom = starterRoad1;
+    sword = new Item("Sword", 3);
+    currentRoom.components.push(sword);
     nothing = new Room("Nothing");
     nothing.description = "You see nothing beyond this point. You should probably head back.";
     connectRooms(starterRoad1, nothing, "west", "east");
-    currentRoom = starterRoad1;
     beginnerFork = new Room("Fork in the Road");
     beginnerFork.description = "A fork in the road has two trails. One heads northeast, and the other goes from east to west.";
     connectRooms(beginnerFork, starterRoad1, "west", "east");
@@ -95,7 +112,9 @@ function initializeRooms() {
     wildField15 = new Room("Wild Fields");
     wildField16 = new Room("Wild Fields");
     wildField17 = new Room("Wild Fields");
-    wildField18 = new Room("Wild Fields");
+    wildField18 = new CustomRoom("Wild Fields");
+    wildField18.description = "A metal knight stands tall and still here. It would be best not to fight him."
+    wildField18.altDescription = "The remains of a strong warrior lie here.";
     wildField19 = new Room("Wild Fields");
     wildField20 = new Room("Wild Fields");
     beach1 = new Room("Beach");
@@ -192,15 +211,10 @@ function initializeRooms() {
 // }
 //FUNCTIONS I MIGHT USE ^^^
 
-/** 
- * A sentence is structured as follows:
- * verb subject item.
- * A subject can be an item and vice versa. You can throw brick at goblin and throw goblin at brick.
- * Some combinations may not be possible though. You cannot throw wall at goblin (or maybe you can)
- * If the first word is not recognized as a verb, it checks the previous word.
- * If the previous word is not a verb, then the program then checks if the first word is the subject
- * If there is nothing else after the subject, it prompts the user for an action on the subject
- */
+function returnItem(list) {
+    return list[0];
+}
+
 function separateCommand(sentence) {
     sentence.toLowerCase();
     const words = sentence.split(" ");
@@ -218,17 +232,12 @@ function checkSyntax(words) {
     if (checkVerb(verb)) {
         if (movementDictionary.includes(verb)) {
             handleMovement(words);
-        }
-        else {
-            return true;
+        } else {
+            handleAction(words);
         }
     }
-    return false;
 }
 
-/**
- * Checks for valid action in dictionary, and room. If either is invalid, return false. Otherwise, return true.
- */
 function checkVerb(verb) { 
     if (dictionary.includes(verb)) {
         if (currentRoom.dictionary.includes(verb)) {
@@ -237,7 +246,9 @@ function checkVerb(verb) {
         outputText("You cannot do that here.");
         return false;
     }
-    outputText("That's not a verb I recognize");
+    if (verb != "") {
+        outputText("I do not recognize the verb \"" + verb + "\"");
+    }
     return false;
 }
 
@@ -262,6 +273,15 @@ function handleMovement(words) {
             }
         break;
         case 'run':
+            if (words.length > 1) {
+                words = words.slice(1);
+                handleMovement(words);
+            } else {
+                outputText("Which direction do you want to go?");
+                previous_verb = "go";
+            }
+        break;
+        case 'travel':
             if (words.length > 1) {
                 words = words.slice(1);
                 handleMovement(words);
@@ -361,12 +381,6 @@ function handleClimb(words) {
     
 }
 
-/**
- *  Assumes sentence works and performs action without checking for validity.
- */
-function handleVerb(words) {
-}
-
 function handleDirection(direction) {
     if(!currentRoom.directions.some(dir => {
         if(dir == direction) {
@@ -387,24 +401,116 @@ function changeRoom(index) {
     topRightElement.textContent = currentRoom.location;
 }
 
-function look() {
-    outputText(currentRoom.description);
+function handleAction(words) {
+    verb = words[0];
+    switch (verb) {
+        case 'attack':
+            parseAttack(words);
+        break;
+        case 'look':
+            parseLook(words);
+        break;
+        case 'jump':
+            parseJump(words);
+        break;
+        case 'grab':
+            parseGrab(words);
+        break;
+        case 'pick':
+            parseGrab(words);
+        break;
+        case 'drop':
+            parseDrop(words);
+        break;
+    }
 }
 
-function jump() {
-    outputText("Wheeeeee!");
+function parseGrab(words) {
+    if (words[1] == "up") {
+        words.splice(1, 1);
+        parseGrab(words);
+    } else {
+        grab = false;
+        correctComponent = null;
+        currentRoom.components.forEach(component => {
+            if (component.name.toLowerCase() == words[1]) {
+                
+                grab = true;
+            }
+        });
+        
+        if (grab) {
+            if (words.length > 2) {
+                outputText("I only understood you as far as " + words[0] + " " + words[1]);
+            } else {
+                outputText("You picked up the " + words[1] + ".");
+                inventory.push(returnItem(currentRoom.components.splice(currentRoom.components.indexOf(correctComponent),1))); 
+            }
+        } else {
+            if (words[1] != undefined) {
+                outputText("There is no " + words[1] + " here.");
+            } else {
+                outputText("What do you want to pick up?");
+            }
+        }
+    }
 }
 
-//In order to connect rooms that require climbing, up and down must be valid directions. However, they must only work when paired with climb
+function parseDrop(words) {
+    drop = false;
+    correctComponent = null;
+    inventory.forEach(component => {
+        if (component.name.toLowerCase() == words[1]) {
+            correctComponent = component;
+            drop = true;
+        }
+    });
+    if (drop) {
+        if (words.length > 2) {
+            outputText("I only understood you as far as drop " + correctComponent.name.toLowerCase() + ".")
+        } else {
+            outputText("You dropped the " + correctComponent.name.toLowerCase() + ".");
+            currentRoom.components.push(returnItem(inventory.splice(inventory.indexOf(correctComponent),1))); 
+    
+        }
+    } else {
+        if (words[1] != undefined) {
+            outputText("You do not possess " + words[1] + "")
+        } else {
+            outputText("What do you want to drop?");
+        }
+    }
+    
+}
+ 
+function parseLook(words) {
+    if (words.length > 1) {
+        if (words[1] == "around") {
+            if (words.length > 2) {
+                outputText("I only understood you as far as look around.");
+            } else {
+                outputText(currentRoom.description);   
+            }
+        } else {
+            outputText("I only understood you as far as look.");
+        }
+    } else {
+        outputText(currentRoom.description);
+    }
+}
+
+function parseJump(words) {
+    if (words.length > 1) {
+        outputText("I only understood you as far as jump");
+    } else {
+        outputText("Wheeeeee!");
+    }
+}
+
 /**
- * Attacking something requires a few things:
- * 1. The thing you are attacking must have health
- * 2. The thing you are attacking with must be in your inventory
- * The calculation for damage is as follows: if (damage > defense) health = health - (defense - damage)
+ * In order to attack, the item must have a damage value and the enemy must have a health value.
  */
-
-function attack(component1, component2) {
-
+function attack(item, enemy) {
 }
 
 function promptDirection() {
@@ -434,8 +540,6 @@ window.onload = (event) => {
     outputText(currentRoom.description);
     currentRoom.entered = true;
 }
-
-
 
 const terminalOutput = document.getElementById("terminal-output");
 const terminalCommand = document.getElementById("terminal-command");
