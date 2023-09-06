@@ -5,7 +5,7 @@ let previous_verb = null;
 let previous_component1 = null;
 let previous_component2 = null;
 let dictionary = ["attack","look","jump","grab","pick","drop", "inventory"];
-let movementDictionary = ["climb","go","walk","run","travel","north","northeast","east","southeast","south","southwest","west","northwest","up","down"];
+let movementDictionary = ["climb","go","walk","run","travel","head","move","north","northeast","east","southeast","south","southwest","west","northwest","up","down"];
 dictionary = dictionary.concat(movementDictionary);
 let basicDictionary = dictionary;
 
@@ -290,6 +290,24 @@ function handleMovement(words) {
                 previous_verb = "go";
             }
         break;
+        case 'head':
+            if (words.length > 1) {
+                words = words.slice(1);
+                handleMovement(words);
+            } else {
+                outputText("Which direction do you want to go?");
+                previous_verb = "go";
+            }
+        break;
+        case 'move':
+            if (words.length > 1) {
+                words = words.slice(1);
+                handleMovement(words);
+            } else {
+                outputText("Which direction do you want to go?");
+                previous_verb = "go";
+            }
+        break;
         case 'north':
             if (words.length > 1) {
                 outputText("I only understod you as far as north");
@@ -363,7 +381,7 @@ function handleMovement(words) {
 
 function handleClimb(words) {
     if (words.length == 1) {
-        handleDirection("up");
+        handleDirection("up");  //Defaults climb to go up
     } else {
         direction = words[1];
         if (direction == 'up' || direction == 'down') {
