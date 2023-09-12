@@ -8,6 +8,7 @@ let dictionary = ["attack","look","jump","grab","pick","drop", "inventory"];
 let movementDictionary = ["climb","go","walk","run","travel","head","move","north","northeast","east","southeast","south","southwest","west","northwest","up","down"];
 dictionary = dictionary.concat(movementDictionary);
 let basicDictionary = dictionary;
+let target = null;
 
 
 /**
@@ -57,12 +58,17 @@ class Entity extends Component {
     }
     
 }
-
 class Item extends Component {
-    damage;
+    damage = 0;
+    actionList = [];
+    responseList = [];
     constructor(name, damage) {
         super(name);
         this.damage = damage;
+    }
+    addAction(action, response) {
+        this.actionList.push(action);
+        this.responseList.push(response);
     }
 }
 
@@ -70,20 +76,27 @@ function initializeRooms() {
     starterRoad1 = new Room("Brooke Road");
     starterRoad1.description = "The road to the east looks promising, but there's nothing to the west.";
     currentRoom = starterRoad1;
+
     sword = new Item("Sword", 3);
     currentRoom.components.push(sword);
+
     nothing = new Room("Nothing");
     nothing.description = "You see nothing beyond this point. You should probably head back.";
     connectRooms(starterRoad1, nothing, "west", "east");
+
     beginnerFork = new Room("Fork in the Road");
     beginnerFork.description = "A fork in the road has two trails. One heads northeast, and the other goes from east to west.";
     connectRooms(beginnerFork, starterRoad1, "west", "east");
+
+    //Not a custom room, because once the user types "open door" with a key, the room is obsolete.
     goblinDoor = new Room("Mysterious Door");
     goblinDoor.description = "A big wooden door that seems to be locked.";
     connectRooms(beginnerFork, goblinDoor, "northeast", "southwest");
+
     starterRoad2 = new Room("Brooke Road");
     starterRoad2.description = "This road leads from east to west.";
     connectRooms(beginnerFork, starterRoad2, "east", "west");
+
     wildField1 = new Room("Wild Fields");
     wildField2 = new Room("Wild Fields");
     wildField3 = new Room("Wild Fields");
@@ -99,6 +112,7 @@ function initializeRooms() {
     wildField10 = new Room("Wild Fields");
     wildField11 = new Room("Wild Fields");
     wildField12 = new Room("Wild Fields");
+
     grandTree = new Room("Grand Tree");
     grandTree.description = "The grand tree soars to towering heights, its branches reaching outward, while its mighty trunk radiates a mesmerizing glow.";
     largeBranch = new Room("Large Branch");
@@ -107,16 +121,19 @@ function initializeRooms() {
     appleBranch = new Room("Weak Branch");
     appleBranch.description = "As you reach this point on the tree, you spot a shimmering apple. Will you grab it?";
     connectRooms(largeBranch, appleBranch, "up", "down");
+
     wildField13 = new Room("Wild Fields");
     wildField14 = new Room("Wild Fields");
     wildField15 = new Room("Wild Fields");
     wildField16 = new Room("Wild Fields");
     wildField17 = new Room("Wild Fields");
+
     wildField18 = new CustomRoom("Wild Fields");
     wildField18.description = "A metal knight stands tall and still here. It would be best not to fight him."
     wildField18.altDescription = "The remains of a strong warrior lie here.";
     wildField19 = new Room("Wild Fields");
     wildField20 = new Room("Wild Fields");
+
     beach1 = new Room("Beach");
     beach1.description = "This coast consists of various shells and colorful rocks.";
     beach2 = new Room("Beach");
@@ -124,6 +141,7 @@ function initializeRooms() {
     beach4 = new Room("Beach");
     beach5 = new Room("Beach");
     beach6 = new Room("Beach");
+
     connectRooms(starterRoad2, wildField5, "east", "west");
     connectRooms(wildField1, wildField2, "east", "west");
     connectRooms(wildField2, wildField3, "east", "west");
@@ -201,6 +219,17 @@ function initializeRooms() {
     connectRooms(wildField16, wildField20, "southeast", "northwest");
     connectRooms(wildField17, beach4, "southeast", "northwest");
     connectRooms(wildField19, beach6, "southeast", "northwest");
+
+    test();
+}
+
+function test() {
+    goblin = new Entity("Goblin", 10, 5, 3);
+
+    currentRoom.components.push(goblin);
+    goblin2 = new Entity("Goblin2", 10, 5, 3);
+
+    currentRoom.components.push(goblin2);
 }
 
 // function get(list, item) {
@@ -224,6 +253,12 @@ function separateCommand(sentence) {
 function parse(words) {
     if (previous_verb != null) {
         words.splice(0, 0,previous_verb);
+        previous_verb = null;
+    }
+    if (previous_component1 != null) {
+        words.splice(1, 0,previous_component1.toLowerCase());
+        previous_component1 = null;
+        console.log(words);
     }
     checkSyntax(words);
 }
@@ -425,6 +460,12 @@ function handleAction(words) {
         case 'attack':
             parseAttack(words);
         break;
+        case 'hit':
+            parseAttack(words);
+        break;
+        case 'stab':
+            parseAttack(words);
+        break;
         case 'look':
             parseLook(words);
         break;
@@ -452,7 +493,7 @@ function parseGrab(words) {
         correctComponent = null;
         currentRoom.components.forEach(component => {
             if (component.name.toLowerCase() == words[1]) {
-                
+                correctComponent = component;
                 grab = true;
             }
         });
@@ -461,8 +502,12 @@ function parseGrab(words) {
             if (words.length > 2) {
                 outputText("I only understood you as far as " + words[0] + " " + words[1]);
             } else {
-                outputText("You picked up the " + words[1] + ".");
-                inventory.push(returnItem(currentRoom.components.splice(currentRoom.components.indexOf(correctComponent),1))); 
+                if (correctComponent instanceof Item) {
+                    outputText("You picked up the " + words[1] + ".");
+                    inventory.push(returnItem(currentRoom.components.splice(currentRoom.components.indexOf(correctComponent),1)));
+                } else {
+                    outputText("You cannot pick that up.");
+                }
             }
         } else {
             if (words[1] != undefined) {
@@ -525,10 +570,61 @@ function parseJump(words) {
     }
 }
 
-/**
- * In order to attack, the item must have a damage value and the enemy must have a health value.
- */
-function attack(item, enemy) {
+function parseAttack(words) {
+    if (words.length > 1) {
+        target = null;
+        if (findComponent(currentRoom.components,words[1])) {
+            if (target instanceof Entity) {
+                if (words.length < 3) {
+                    outputText("What do you want to attack the " + target.name.toLowerCase() + " with?");
+                    previous_verb = "attack";
+                    previous_component1 = target.name;
+                } else if (words.length == 3) {
+                    if (words[3] == "with") {
+                        words.splice(2,1);
+                        parseAttack(words);
+                    } else {
+                        tempTarget = target;
+                        if (findComponent(inventory, words[2])) {
+                            outputText("You successfully attacked " + tempTarget.name);
+                            attack(tempTarget, target);
+                        } else {
+                            outputText("You do not have that!");
+                        }
+                    }
+                } else if (words.length > 3) {
+                    if (words[2] == "with") {
+                        words.splice(2,1);
+                        parseAttack(words);
+                    } else {
+                        outputText("What are you even saying?");
+                    }
+                }
+            } else {
+                outputText("You cannot attack that.");
+            }
+        } else {
+            outputText("There is no " + words[1] + " here.");
+        }
+    } else {
+        outputText("What do you want to attack?");
+        previous_verb = "attack";
+    }
+    
+}
+
+function attack(entity, weapon) {
+    entity.health = entity.health - weapon.damage;
+}
+
+function findComponent(list, entity) {
+    found = false;
+    list.forEach(component => {
+        if (component.name.toLowerCase() == entity) {
+        target = component;
+        found = true;
+    }});
+    return found;
 }
 
 function promptDirection() {
