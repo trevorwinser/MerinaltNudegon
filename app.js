@@ -8,7 +8,6 @@ let dictionary = ["attack","look","jump","grab","pick","drop", "inventory"];
 let movementDictionary = ["climb","go","walk","run","travel","head","move","north","northeast","east","southeast","south","southwest","west","northwest","up","down"];
 dictionary = dictionary.concat(movementDictionary);
 let basicDictionary = dictionary;
-let target = null;
 
 
 /**
@@ -251,15 +250,16 @@ function separateCommand(sentence) {
 }
 
 function parse(words) {
+    if (words[0] == 'a') words.splice(0,1);
+    if (previous_component1 != null) {
+        words.splice(0, 0, previous_component1.toLowerCase());
+        previous_component1 = null;
+    }
     if (previous_verb != null) {
         words.splice(0, 0,previous_verb);
         previous_verb = null;
     }
-    if (previous_component1 != null) {
-        words.splice(1, 0,previous_component1.toLowerCase());
-        previous_component1 = null;
-        console.log(words);
-    }
+    
     checkSyntax(words);
 }
 function checkSyntax(words) {
@@ -485,7 +485,7 @@ function handleAction(words) {
 }
 
 function parseGrab(words) {
-    if (words[1] == "up") {
+    if (words[0] == "pick" && words[1] == "up") {
         words.splice(1, 1);
         parseGrab(words);
     } else {
@@ -513,6 +513,7 @@ function parseGrab(words) {
             if (words[1] != undefined) {
                 outputText("There is no " + words[1] + " here.");
             } else {
+                previous_verb = "pick";
                 outputText("What do you want to pick up?");
             }
         }
@@ -534,12 +535,12 @@ function parseDrop(words) {
         } else {
             outputText("You dropped the " + correctComponent.name.toLowerCase() + ".");
             currentRoom.components.push(returnItem(inventory.splice(inventory.indexOf(correctComponent),1))); 
-    
         }
     } else {
-        if (words[1] != undefined) {
+        if (words.length == 2) {
             outputText("You do not possess " + words[1] + "")
         } else {
+            previous_verb = "drop";
             outputText("What do you want to drop?");
         }
     }
@@ -573,21 +574,22 @@ function parseJump(words) {
 function parseAttack(words) {
     if (words.length > 1) {
         target = null;
-        if (findComponent(currentRoom.components,words[1])) {
+        weapon = null;
+        if (detectComponent(currentRoom.components,words[1])) {
+            target = findComponent(currentRoom.components, words[1]);
             if (target instanceof Entity) {
                 if (words.length < 3) {
                     outputText("What do you want to attack the " + target.name.toLowerCase() + " with?");
                     previous_verb = "attack";
                     previous_component1 = target.name;
                 } else if (words.length == 3) {
-                    if (words[3] == "with") {
+                    if (words[2] == "with") {
                         words.splice(2,1);
                         parseAttack(words);
                     } else {
-                        tempTarget = target;
-                        if (findComponent(inventory, words[2])) {
-                            outputText("You successfully attacked " + tempTarget.name);
-                            attack(tempTarget, target);
+                        if (detectComponent(inventory, words[2])) {
+                            weapon = findComponent(inventory, words[2]);
+                            attack(target, weapon);
                         } else {
                             outputText("You do not have that!");
                         }
@@ -615,13 +617,24 @@ function parseAttack(words) {
 
 function attack(entity, weapon) {
     entity.health = entity.health - weapon.damage;
+    if (entity.health < 0) {
+        outputText("You killed the" + entity.name + ".");
+    } else {
+        outputText("The attack landed!")
+    }
 }
-
-function findComponent(list, entity) {
+function findComponent(list, name) {
+    foundComponent = null;
+    list.forEach(component => {
+        if (component.name.toLowerCase() == name) {
+        foundComponent = component;
+    }});
+    return foundComponent;
+}
+function detectComponent(list, name) {
     found = false;
     list.forEach(component => {
-        if (component.name.toLowerCase() == entity) {
-        target = component;
+        if (component.name.toLowerCase() == name) {
         found = true;
     }});
     return found;
