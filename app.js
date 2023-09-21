@@ -231,14 +231,6 @@ function test() {
     currentRoom.components.push(goblin2);
 }
 
-// function get(list, item) {
-//     list.some(component => {if(component.name === temp) return component});
-// }
-// function equals(element, name) {
-//     return element.name === name;
-// }
-//FUNCTIONS I MIGHT USE ^^^
-
 function returnItem(list) {
     return list[0];
 }
@@ -262,6 +254,7 @@ function parse(words) {
     
     checkSyntax(words);
 }
+
 function checkSyntax(words) {
     verb = words[0];
     if (checkVerb(verb)) {
@@ -642,8 +635,6 @@ function detectComponent(list, name) {
 
 function promptDirection() {
     outputText("Which direction do you want to go?");
-}
-function promptSubject(verb) {
 }
 
 function connectRooms(x, y, xdir, ydir) {
