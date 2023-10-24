@@ -4,10 +4,13 @@ let inventory = [];
 let previous_verb = null;
 let previous_component1 = null;
 let previous_component2 = null;
-let dictionary = ["attack","look","jump","grab","pick","drop", "inventory"];
-let movementDictionary = ["climb","go","walk","run","travel","head","move","north","northeast","east","southeast","south","southwest","west","northwest","up","down"];
+let dictionary = ["attack","hit","punch","look","jump","grab","pick","drop", "inventory"];
+let movementDictionary = ["climb","go","walk","run","travel","head","move","north","northeast","east","southeast","south","southwest","west","northwest","up","down",];
 dictionary = dictionary.concat(movementDictionary);
 let basicDictionary = dictionary;
+let health = 10;
+let defense = 1;
+let luck = 1;
 
 
 /**
@@ -31,43 +34,39 @@ class CustomRoom extends Room {
         super(location);
     }
     altDescription = "";
-
+    removeFromDictionary(action) {
+        dictionary.pop(dictionary.indexOf(action))
+    }
 }
 
 class Component {
-    dictionary = [];
-    responses = [];
     name;
+    description;
     constructor(name) {
         this.name = name;
     }
 }
 
 class Entity extends Component {
-    health;
-    strength;
-    attackTime;
-    turnsInteracted;
+    health = 1;
+    defense = 0;
+    strength = 0;
+    attackTime = 9999999;
+    turnsInteracted = 0;
     dialogue;
-    constructor(name,health, strength, attackTime) {
+    constructor(name, health, defense, strength, attackTime) {
         super(name);
         this.health = health;
+        this.defense = defense;
         this.strength = strength;
         this.attackTime = attackTime;
-    }
-    
+    }  
 }
 class Item extends Component {
     damage = 0;
-    actionList = [];
-    responseList = [];
     constructor(name, damage) {
         super(name);
         this.damage = damage;
-    }
-    addAction(action, response) {
-        this.actionList.push(action);
-        this.responseList.push(response);
     }
 }
 
@@ -75,9 +74,6 @@ function initializeRooms() {
     starterRoad1 = new Room("Brooke Road");
     starterRoad1.description = "The road to the east looks promising, but there's nothing to the west.";
     currentRoom = starterRoad1;
-
-    sword = new Item("Sword", 3);
-    currentRoom.components.push(sword);
 
     nothing = new Room("Nothing");
     nothing.description = "You see nothing beyond this point. You should probably head back.";
@@ -128,7 +124,8 @@ function initializeRooms() {
     wildField17 = new Room("Wild Fields");
 
     wildField18 = new CustomRoom("Wild Fields");
-    wildField18.description = "A metal knight stands tall and still here. It would be best not to fight him."
+    TMK = new Entity("TMK", 10, 5, 3);
+    TMK.description = "A metal knight stands tall and still here.";
     wildField18.altDescription = "The remains of a strong warrior lie here.";
     wildField19 = new Room("Wild Fields");
     wildField20 = new Room("Wild Fields");
@@ -223,13 +220,22 @@ function initializeRooms() {
 }
 
 function test() {
-    goblin = new Entity("Goblin", 10, 5, 3);
+    sword = new Item("Sword", 3);
+    sword.description = "A steel sword lays on the ground here."
+    currentRoom.components.push(sword);
 
+    goblin = new Entity("Goblin", 10, 1, 2, 2);
+    goblin.description = "A goblin stands in your way."
     currentRoom.components.push(goblin);
-    goblin2 = new Entity("Goblin2", 10, 5, 3);
-
-    currentRoom.components.push(goblin2);
 }
+
+// function get(list, item) {
+//     list.some(component => {if(component.name === temp) return component});
+// }
+// function equals(element, name) {
+//     return element.name === name;
+// }
+//FUNCTIONS I MIGHT USE ^^^
 
 function returnItem(list) {
     return list[0];
@@ -254,7 +260,6 @@ function parse(words) {
     
     checkSyntax(words);
 }
-
 function checkSyntax(words) {
     verb = words[0];
     if (checkVerb(verb)) {
@@ -444,9 +449,26 @@ function changeRoom(index) {
         outputText(currentRoom.description);
         currentRoom.entered = true;
     }
+    for (component of currentRoom.components) {
+        outputText(component.description);
+    }
     topRightElement.textContent = currentRoom.location;
 }
 
+function updateEntities() {
+    for (entity of currentRoom.components) {
+        if (entity instanceof Entity) {
+            entity.turnsInteracted++;
+            if (entity.turnsInteracted > entity.attackTime) {
+                attackPlayer(entity);
+                entity.turnsInteracted = 0;
+            }
+        }
+    }
+}
+
+
+//Don't forget to updateEntities after each successful command (if necessary).
 function handleAction(words) {
     verb = words[0];
     switch (verb) {
@@ -456,7 +478,7 @@ function handleAction(words) {
         case 'hit':
             parseAttack(words);
         break;
-        case 'stab':
+        case 'punch':
             parseAttack(words);
         break;
         case 'look':
@@ -495,9 +517,10 @@ function parseGrab(words) {
             if (words.length > 2) {
                 outputText("I only understood you as far as " + words[0] + " " + words[1]);
             } else {
-                if (correctComponent instanceof Item) {
+                if (correctComponent instanceof Item) {                 //Successful command
                     outputText("You picked up the " + words[1] + ".");
                     inventory.push(returnItem(currentRoom.components.splice(currentRoom.components.indexOf(correctComponent),1)));
+                    updateEntities();
                 } else {
                     outputText("You cannot pick that up.");
                 }
@@ -525,9 +548,10 @@ function parseDrop(words) {
     if (drop) {
         if (words.length > 2) {
             outputText("I only understood you as far as drop " + correctComponent.name.toLowerCase() + ".")
-        } else {
+        } else {                 //Successful command
             outputText("You dropped the " + correctComponent.name.toLowerCase() + ".");
             currentRoom.components.push(returnItem(inventory.splice(inventory.indexOf(correctComponent),1))); 
+            updateEntities();
         }
     } else {
         if (words.length == 2) {
@@ -559,8 +583,9 @@ function parseLook(words) {
 function parseJump(words) {
     if (words.length > 1) {
         outputText("I only understood you as far as jump");
-    } else {
+    } else {                 //Successful command
         outputText("Wheeeeee!");
+        updateEntities();
     }
 }
 
@@ -580,9 +605,14 @@ function parseAttack(words) {
                         words.splice(2,1);
                         parseAttack(words);
                     } else {
-                        if (detectComponent(inventory, words[2])) {
+                        if (detectComponent(inventory, words[2])) {                 //Successful command
                             weapon = findComponent(inventory, words[2]);
                             attack(target, weapon);
+                            updateEntities();
+                        } else if (words[2] == 'fist' || words[2] == 'fists') {     //Successful command
+                            dummy = new Item("Fist",1);
+                            attack(target,dummy);
+                            updateEntities();
                         } else {
                             outputText("You do not have that!");
                         }
@@ -609,13 +639,30 @@ function parseAttack(words) {
 }
 
 function attack(entity, weapon) {
-    entity.health = entity.health - weapon.damage;
+    if (weapon.damage > entity.defense) {
+        entity.health = entity.health + (entity.defense - weapon.damage);
+    } else {
+        entity.health--;        //Pity the weak >:)
+    }
     if (entity.health < 0) {
         outputText("You killed the" + entity.name + ".");
     } else {
-        outputText("The attack landed!")
+        outputText("The attack landed!");
     }
 }
+
+function attackPlayer(entity) {
+    if (entity.strength > defense) {
+        
+        health = health + (defense - entity.strength);
+        outputText("The " + entity.name.toLowerCase() + " attacked you!");
+        if (health <= 0) {
+            outputText("You died. Game over.")
+        }
+    }
+}
+
+
 function findComponent(list, name) {
     foundComponent = null;
     list.forEach(component => {
@@ -656,6 +703,9 @@ window.onload = (event) => {
     initializeRooms();
     outputText(currentRoom.location);
     outputText(currentRoom.description);
+    for (component of currentRoom.components) {
+        outputText(component.description);
+    }
     currentRoom.entered = true;
 }
 
