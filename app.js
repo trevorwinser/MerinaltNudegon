@@ -11,6 +11,8 @@ let basicDictionary = dictionary;
 let health = 10;
 let defense = 1;
 let luck = 1;
+let dodge = false;
+let dodgeCounter = 1;
 
 
 /**
@@ -224,7 +226,7 @@ function test() {
     sword.description = "A steel sword lays on the ground here."
     currentRoom.components.push(sword);
 
-    goblin = new Entity("Goblin", 10, 1, 2, 2);
+    goblin = new Entity("Goblin", 10, 0, 2, 2);
     goblin.description = "A goblin stands in your way."
     currentRoom.components.push(goblin);
 }
@@ -460,11 +462,17 @@ function updateEntities() {
         if (entity instanceof Entity) {
             entity.turnsInteracted++;
             if (entity.turnsInteracted > entity.attackTime) {
-                attackPlayer(entity);
-                entity.turnsInteracted = 0;
+                if (!dodge) {
+                    attackPlayer(entity);
+                    entity.turnsInteracted = 0;
+                } else {
+                    dodge = false;
+                    entity.turnsInteracted = 0;
+                }
             }
         }
     }
+    dodge = false;      //Make sure dodge only happens for one turn
 }
 
 
@@ -645,7 +653,7 @@ function attack(entity, weapon) {
         entity.health--;        //Pity the weak >:)
     }
     if (entity.health < 0) {
-        outputText("You killed the" + entity.name + ".");
+        outputText("You killed the " + entity.name + ".");
     } else {
         outputText("The attack landed!");
     }
