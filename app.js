@@ -666,8 +666,7 @@ function attack(entity, weapon) {
 }
 
 function attackPlayer(entity) {
-    if (entity.strength > defense) {
-        
+    if (entity.strength > defense) { 
         health = health + (defense - entity.strength);
         outputText("The " + entity.name.toLowerCase() + " attacked you!");
         if (health <= 0) {
@@ -678,7 +677,7 @@ function attackPlayer(entity) {
 
 
 function findComponent(list, name) {
-    foundComponent = null;
+    let foundComponent = null;
     list.forEach(component => {
         if (component.name.toLowerCase() == name) {
         foundComponent = component;
