@@ -132,7 +132,7 @@ function initializeRooms() {
     const wildField17 = new Room("Wild Fields");
 
     const wildField18 = new CustomRoom("Wild Fields");
-    TMK = new Entity("TMK", 10, 5, 3);
+    const TMK = new Entity("TMK", 10, 5, 3);
     TMK.description = "A metal knight stands tall and still here."
     
     const wildField19 = new Room("Wild Fields");
