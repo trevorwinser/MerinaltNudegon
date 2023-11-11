@@ -464,7 +464,7 @@ function changeRoom(index) {
 }
 
 function updateEntities() {
-    for (entity of currentRoom.components) {
+    for (let entity of currentRoom.components) {
         if (entity instanceof Entity) {
             entity.turnsInteracted++;
             if (entity.turnsInteracted > entity.attackTime) {
