@@ -269,7 +269,7 @@ function parse(words) {
     checkSyntax(words);
 }
 function checkSyntax(words) {
-    verb = words[0];
+    let verb = words[0];
     if (checkVerb(verb)) {
         if (movementDictionary.includes(verb)) {
             handleMovement(words);
@@ -484,7 +484,7 @@ function updateEntities() {
 
 //Don't forget to updateEntities after each successful command (if necessary).
 function handleAction(words) {
-    verb = words[0];
+    let verb = words[0];
     switch (verb) {
         case 'attack':
             parseAttack(words);
@@ -518,8 +518,8 @@ function parseGrab(words) {
         words.splice(1, 1);
         parseGrab(words);
     } else {
-        grab = false;
-        correctComponent = null;
+        let grab = false;
+        let correctComponent = null;
         currentRoom.components.forEach(component => {
             if (component.name.toLowerCase() == words[1]) {
                 correctComponent = component;
@@ -551,8 +551,8 @@ function parseGrab(words) {
 }
 
 function parseDrop(words) {
-    drop = false;
-    correctComponent = null;
+    let drop = false;
+    let correctComponent = null;
     inventory.forEach(component => {
         if (component.name.toLowerCase() == words[1]) {
             correctComponent = component;
@@ -605,8 +605,8 @@ function parseJump(words) {
 
 function parseAttack(words) {
     if (words.length > 1) {
-        target = null;
-        weapon = null;
+        let target = null;
+        let weapon = null;
         if (detectComponent(currentRoom.components,words[1])) {
             target = findComponent(currentRoom.components, words[1]);
             if (target instanceof Entity) {
@@ -686,7 +686,7 @@ function findComponent(list, name) {
     return foundComponent;
 }
 function detectComponent(list, name) {
-    found = false;
+    let found = false;
     list.forEach(component => {
         if (component.name.toLowerCase() == name) {
         found = true;
@@ -717,7 +717,7 @@ window.onload = (event) => {
     initializeRooms();
     outputText(currentRoom.location);
     outputText(currentRoom.description);
-    for (component of currentRoom.components) {
+    for (let component of currentRoom.components) {
         outputText(component.description);
     }
     currentRoom.entered = true;
