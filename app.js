@@ -1,18 +1,18 @@
-let currentRoom = null;
-let rooms = [];
-let inventory = [];
-let previous_verb = null;
-let previous_component1 = null;
-let previous_component2 = null;
-let dictionary = ["attack","hit","punch","look","jump","grab","pick","drop", "inventory"];
-let movementDictionary = ["climb","go","walk","run","travel","head","move","north","northeast","east","southeast","south","southwest","west","northwest","up","down",];
+var currentRoom = null;
+var rooms = [];
+var inventory = [];
+var previous_verb = null;
+var previous_component1 = null;
+var previous_component2 = null;
+var dictionary = ["attack","hit","punch","look","jump","grab","pick","drop", "inventory"];
+var movementDictionary = ["climb","go","walk","run","travel","head","move","north","northeast","east","southeast","south","southwest","west","northwest","up","down",];
 dictionary = dictionary.concat(movementDictionary);
-let basicDictionary = dictionary;
-let health = 10;
-let defense = 1;
-let luck = 1;
-let dodge = false;
-let dodgeCounter = 1;
+var basicDictionary = dictionary;
+var health = 10;
+var defense = 1;
+var luck = 1;
+var dodge = false;
+var dodgeCounter = 1;
 
 
 /**
@@ -35,9 +35,15 @@ class CustomRoom extends Room {
     constructor(location) {
         super(location);
     }
+    customAction(x) {
+        x();
+    }
     altDescription = "";
-    removeFromDictionary(action) {
-        dictionary.pop(dictionary.indexOf(action))
+    removeAction(action) {
+        dictionary.pop(dictionary.indexOf(action));
+    }
+    addAction(action) {
+        dictionary.push(action);
     }
 }
 
@@ -73,72 +79,72 @@ class Item extends Component {
 }
 
 function initializeRooms() {
-    starterRoad1 = new Room("Brooke Road");
+    const starterRoad1 = new Room("Brooke Road");
     starterRoad1.description = "The road to the east looks promising, but there's nothing to the west.";
     currentRoom = starterRoad1;
 
-    nothing = new Room("Nothing");
+    const nothing = new Room("Nothing");
     nothing.description = "You see nothing beyond this point. You should probably head back.";
     connectRooms(starterRoad1, nothing, "west", "east");
 
-    beginnerFork = new Room("Fork in the Road");
+    const beginnerFork = new Room("Fork in the Road");
     beginnerFork.description = "A fork in the road has two trails. One heads northeast, and the other goes from east to west.";
     connectRooms(beginnerFork, starterRoad1, "west", "east");
 
     //Not a custom room, because once the user types "open door" with a key, the room is obsolete.
-    goblinDoor = new Room("Mysterious Door");
+    const goblinDoor = new Room("Mysterious Door");
     goblinDoor.description = "A big wooden door that seems to be locked.";
     connectRooms(beginnerFork, goblinDoor, "northeast", "southwest");
 
-    starterRoad2 = new Room("Brooke Road");
+    const starterRoad2 = new Room("Brooke Road");
     starterRoad2.description = "This road leads from east to west.";
     connectRooms(beginnerFork, starterRoad2, "east", "west");
 
-    wildField1 = new Room("Wild Fields");
-    wildField2 = new Room("Wild Fields");
-    wildField3 = new Room("Wild Fields");
+    const wildField1 = new Room("Wild Fields");
+    const wildField2 = new Room("Wild Fields");
+    const wildField3 = new Room("Wild Fields");
     wildField3.description = "A trail that leads towards the mountains is northeast from here."
-    wildField4 = new Room("Wild Fields");
-    wildField5 = new Room("Wild Fields");
+    const wildField4 = new Room("Wild Fields");
+    const wildField5 = new Room("Wild Fields");
     wildField5.description = "This vast meadow goes on for a while. It may be hard to know where you're going from here, so mapping it out might help.";
-    wildField6 = new Room("Wild Fields");
-    wildField7 = new Room("Wild Fields");
+    const wildField6 = new Room("Wild Fields");
+    const wildField7 = new Room("Wild Fields");
     wildField7.description = "The field spreads far in every direction."
-    wildField8 = new Room("Wild Fields");
-    wildField9 = new Room("Wild Fields");
-    wildField10 = new Room("Wild Fields");
-    wildField11 = new Room("Wild Fields");
-    wildField12 = new Room("Wild Fields");
+    const wildField8 = new Room("Wild Fields");
+    const wildField9 = new Room("Wild Fields");
+    const wildField10 = new Room("Wild Fields");
+    const wildField11 = new Room("Wild Fields");
+    const wildField12 = new Room("Wild Fields");
 
-    grandTree = new Room("Grand Tree");
+    const grandTree = new Room("Grand Tree");
     grandTree.description = "The grand tree soars to towering heights, its branches reaching outward, while its mighty trunk radiates a mesmerizing glow.";
-    largeBranch = new Room("Large Branch");
+    const largeBranch = new Room("Large Branch");
     largeBranch.description = "This branch is plenty sturdy. From here, you can see the entire field from here. Going up might make allow you to see further.";
     connectRooms(grandTree, largeBranch, "up", "down");
-    appleBranch = new Room("Weak Branch");
+    const appleBranch = new Room("Weak Branch");
     appleBranch.description = "As you reach this point on the tree, you spot a shimmering apple. Will you grab it?";
     connectRooms(largeBranch, appleBranch, "up", "down");
 
-    wildField13 = new Room("Wild Fields");
-    wildField14 = new Room("Wild Fields");
-    wildField15 = new Room("Wild Fields");
-    wildField16 = new Room("Wild Fields");
-    wildField17 = new Room("Wild Fields");
+    const wildField13 = new Room("Wild Fields");
+    const wildField14 = new Room("Wild Fields");
+    const wildField15 = new Room("Wild Fields");
+    const wildField16 = new Room("Wild Fields");
+    const wildField17 = new Room("Wild Fields");
 
-    wildField18 = new CustomRoom("Wild Fields");
+    const wildField18 = new CustomRoom("Wild Fields");
     TMK = new Entity("TMK", 10, 5, 3);
-    TMK.description = "A metal knight stands tall and still here.";
-    wildField18.altDescription = "The remains of a strong warrior lie here.";
-    wildField19 = new Room("Wild Fields");
-    wildField20 = new Room("Wild Fields");
+    TMK.description = "A metal knight stands tall and still here."
+    
+    const wildField19 = new Room("Wild Fields");
+    const wildField20 = new Room("Wild Fields");
 
-    beach1 = new Room("Beach");
+    const beach1 = new Room("Beach");
     beach1.description = "This coast consists of various shells and colorful rocks.";
-    beach2 = new Room("Beach");
-    beach3 = new Room("Beach");
-    beach4 = new Room("Beach");
-    beach5 = new Room("Beach");
-    beach6 = new Room("Beach");
+    const beach2 = new Room("Beach");
+    const beach3 = new Room("Beach");
+    const beach4 = new Room("Beach");
+    const beach5 = new Room("Beach");
+    const beach6 = new Room("Beach");
 
     connectRooms(starterRoad2, wildField5, "east", "west");
     connectRooms(wildField1, wildField2, "east", "west");
@@ -222,11 +228,11 @@ function initializeRooms() {
 }
 
 function test() {
-    sword = new Item("Sword", 3);
+    const sword = new Item("Sword", 3);
     sword.description = "A steel sword lays on the ground here."
     currentRoom.components.push(sword);
 
-    goblin = new Entity("Goblin", 10, 0, 2, 2);
+    const goblin = new Entity("Goblin", 10, 0, 2, 2);
     goblin.description = "A goblin stands in your way."
     currentRoom.components.push(goblin);
 }
