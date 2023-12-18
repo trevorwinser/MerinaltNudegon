@@ -4,15 +4,14 @@ var inventory = [];
 var previous_verb = null;
 var previous_component1 = null;
 var previous_component2 = null;
-var dictionary = ["attack","hit","punch","look","jump","grab","pick","drop", "inventory"];
+var dictionary = ["attack","hit","punch","block","look","jump","grab","pick","drop", "inventory"];
 var movementDictionary = ["climb","go","walk","run","travel","head","move","north","northeast","east","southeast","south","southwest","west","northwest","up","down",];
 dictionary = dictionary.concat(movementDictionary);
 var basicDictionary = dictionary;
 var health = 10;
 var defense = 1;
 var luck = 1;
-var dodge = false;
-var dodgeCounter = 1;
+var block = false;
 
 
 /**
@@ -237,14 +236,6 @@ function test() {
     currentRoom.components.push(goblin);
 }
 
-// function get(list, item) {
-//     list.some(component => {if(component.name === temp) return component});
-// }
-// function equals(element, name) {
-//     return element.name === name;
-// }
-//FUNCTIONS I MIGHT USE ^^^
-
 function returnItem(list) {
     return list[0];
 }
@@ -262,7 +253,7 @@ function parse(words) {
         previous_component1 = null;
     }
     if (previous_verb != null) {
-        words.splice(0, 0,previous_verb);
+        words.splice(0, 0, previous_verb);
         previous_verb = null;
     }
     
@@ -468,17 +459,13 @@ function updateEntities() {
         if (entity instanceof Entity) {
             entity.turnsInteracted++;
             if (entity.turnsInteracted > entity.attackTime) {
-                if (!dodge) {
-                    attackPlayer(entity);
-                    entity.turnsInteracted = 0;
-                } else {
-                    dodge = false;
-                    entity.turnsInteracted = 0;
-                }
+                attackPlayer(entity);
+                entity.turnsInteracted = 0;
+                
             }
         }
     }
-    dodge = false;      //Make sure dodge only happens for one turn
+    block = false;  //Disables block after attack process finishes to ensure block lasts for only one turn
 }
 
 
@@ -494,6 +481,9 @@ function handleAction(words) {
         break;
         case 'punch':
             parseAttack(words);
+        break;
+        case 'block':
+            parseBlock(words);
         break;
         case 'look':
             parseLook(words);
@@ -603,6 +593,15 @@ function parseJump(words) {
     }
 }
 
+function parseBlock(words) {
+    if (words.length > 1) {
+        if (words[1] == "with") {
+        } else {
+            outputText("I only understood you as far as 'block'")
+        }
+    }
+}
+
 function parseAttack(words) {
     if (words.length > 1) {
         let target = null;
@@ -666,15 +665,18 @@ function attack(entity, weapon) {
 }
 
 function attackPlayer(entity) {
-    if (entity.strength > defense) { 
-        health = health + (defense - entity.strength);
-        outputText("The " + entity.name.toLowerCase() + " attacked you!");
-        if (health <= 0) {
-            outputText("You died. Game over.")
+    if (!block) {
+        if (entity.strength > defense) { 
+            health = health + (defense - entity.strength);
+            outputText("The " + entity.name.toLowerCase() + " attacked you!");
+            if (health <= 0) {
+                outputText("You died. Game over.")
+            }
         }
+    } else {
+        outputText("You successfully blocked the attack!");
     }
 }
-
 
 function findComponent(list, name) {
     let foundComponent = null;
@@ -684,6 +686,7 @@ function findComponent(list, name) {
     }});
     return foundComponent;
 }
+
 function detectComponent(list, name) {
     let found = false;
     list.forEach(component => {
