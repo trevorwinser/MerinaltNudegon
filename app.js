@@ -595,7 +595,7 @@ function parseJump(words) {
 
 function parseBlock(words) {
     if (words.length > 1) {
-        outputText("I only understood you as far as block");
+        outputText("I only understood you as far as block.");
     } else {
         block = true;
     }
