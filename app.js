@@ -595,10 +595,9 @@ function parseJump(words) {
 
 function parseBlock(words) {
     if (words.length > 1) {
-        if (words[1] == "with") {
-        } else {
-            outputText("I only understood you as far as 'block'")
-        }
+        outputText("I only understood you as far as block");
+    } else {
+        block = true;
     }
 }
 
@@ -623,7 +622,7 @@ function parseAttack(words) {
                             attack(target, weapon);
                             updateEntities();
                         } else if (words[2] == 'fist' || words[2] == 'fists') {     //Successful command
-                            dummy = new Item("Fist",1);
+                            let dummy = new Item("Fist",1);
                             attack(target,dummy);
                             updateEntities();
                         } else {
@@ -658,7 +657,7 @@ function attack(entity, weapon) {
         entity.health--;        //Pity the weak >:)
     }
     if (entity.health < 0) {
-        outputText("You killed the " + entity.name + ".");
+        outputText("You killed the " + entity.name.toLowerCase() + ".");
     } else {
         outputText("The attack landed!");
     }

@@ -1,31 +1,38 @@
+@font-face {
+    font-family: 'myFirstFont';
+    src: url('fonts/clacon2.ttf');
+}
+
 body {
     background-color: black;
     color: #fff;
-    font-family: 'Quantico', sans-serif;
+    font-size: 20px;
+    font-family: 'myFirstFont', sans-serif; /* Fallback to a generic sans-serif font */
 }
 
 #terminal-output {
     padding-left: 2px;
 }
-  
+
 #terminal-input {
     display: flex;
     align-items: flex-end;
 }
-  
+
 input[type="text"] {
     padding-top: 0px;
-    font-size: 16px;
+    font-size: 20px;
     background-color: transparent;
     border: none;
     color: #fff;
-    font-family: 'Quantico', sans-serif;
+    font-family: 'myFirstFont', sans-serif; /* Fallback to a generic sans-serif font */
     width: 100%;
 }
 
 #terminal-command {
     outline: none;
 }
+
 #location {
     position: fixed;
     padding-right: 16px;
@@ -34,5 +41,5 @@ input[type="text"] {
     background-color: transparent;
     border: none;
     color: #fff;
-    font-family: 'Quantico', sans-serif;
+    font-family: 'myFirstFont', sans-serif; /* Fallback to a generic sans-serif font */
 }
