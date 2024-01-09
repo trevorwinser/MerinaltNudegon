@@ -4,14 +4,14 @@ var inventory = [];
 var previous_verb = null;
 var previous_component1 = null;
 var previous_component2 = null;
-var dictionary = ["attack","hit","punch","block","look","jump","grab","pick","drop", "inventory"];
+var dictionary = ["attack","hit","punch","dodge","look","jump","grab","pick","drop", "inventory"];
 var movementDictionary = ["climb","go","walk","run","travel","head","move","north","northeast","east","southeast","south","southwest","west","northwest","up","down",];
 dictionary = dictionary.concat(movementDictionary);
 var basicDictionary = dictionary;
 var health = 10;
 var defense = 1;
 var luck = 1;
-var block = false;
+var dodge = false;
 
 
 /**
@@ -231,7 +231,7 @@ function test() {
     sword.description = "A steel sword lays on the ground here."
     currentRoom.components.push(sword);
 
-    const goblin = new Entity("Goblin", 10, 0, 2, 2);
+    const goblin = new Entity("Goblin", 10, 0, 2, 3);
     goblin.description = "A goblin stands in your way."
     currentRoom.components.push(goblin);
 }
@@ -458,14 +458,19 @@ function updateEntities() {
     for (let entity of currentRoom.components) {
         if (entity instanceof Entity) {
             entity.turnsInteracted++;
-            if (entity.turnsInteracted > entity.attackTime) {
+            console.log("Attack Time:" + entity.attackTime);
+            console.log("Turns Interacted: " + entity.turnsInteracted);
+            if (entity.attackTime - entity.turnsInteracted == 1) {
+                outputText("The " + entity.name.toLowerCase() + " is preparing its attack.");
+            }
+            if (entity.turnsInteracted >= entity.attackTime) {
                 attackPlayer(entity);
                 entity.turnsInteracted = 0;
                 
             }
         }
     }
-    block = false;  //Disables block after attack process finishes to ensure block lasts for only one turn
+    dodge = false;  //Disables dodge after attack process finishes to ensure dodge lasts for only one turn
 }
 
 
@@ -482,8 +487,8 @@ function handleAction(words) {
         case 'punch':
             parseAttack(words);
         break;
-        case 'block':
-            parseBlock(words);
+        case 'dodge':
+            parseDodge(words);
         break;
         case 'look':
             parseLook(words);
@@ -574,13 +579,19 @@ function parseLook(words) {
             if (words.length > 2) {
                 outputText("I only understood you as far as look around.");
             } else {
-                outputText(currentRoom.description);   
+                outputText(currentRoom.description); 
+                for (let component of currentRoom.components) {
+                    outputText(component.description);
+                }  
             }
         } else {
             outputText("I only understood you as far as look.");
         }
     } else {
         outputText(currentRoom.description);
+        for (let component of currentRoom.components) {
+            outputText(component.description);
+        }
     }
 }
 
@@ -593,11 +604,12 @@ function parseJump(words) {
     }
 }
 
-function parseBlock(words) {
+function parseDodge(words) {
     if (words.length > 1) {
-        outputText("I only understood you as far as block.");
+        outputText("I only understood you as far as dodge.");
     } else {
-        block = true;
+        dodge = true;
+        updateEntities();
     }
 }
 
@@ -619,12 +631,12 @@ function parseAttack(words) {
                     } else {
                         if (detectComponent(inventory, words[2])) {                 //Successful command
                             weapon = findComponent(inventory, words[2]);
-                            attack(target, weapon);
                             updateEntities();
+                            attack(target, weapon);
                         } else if (words[2] == 'fist' || words[2] == 'fists') {     //Successful command
                             let dummy = new Item("Fist",1);
-                            attack(target,dummy);
                             updateEntities();
+                            attack(target,dummy);
                         } else {
                             outputText("You do not have that!");
                         }
@@ -664,7 +676,7 @@ function attack(entity, weapon) {
 }
 
 function attackPlayer(entity) {
-    if (!block) {
+    if (!dodge) {
         if (entity.strength > defense) { 
             health = health + (defense - entity.strength);
             outputText("The " + entity.name.toLowerCase() + " attacked you!");
@@ -673,7 +685,7 @@ function attackPlayer(entity) {
             }
         }
     } else {
-        outputText("You successfully blocked the attack!");
+        outputText("You successfully dodged the attack!");
     }
 }
 
