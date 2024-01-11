@@ -4,7 +4,7 @@ var inventory = [];
 var previous_verb = null;
 var previous_component1 = null;
 var previous_component2 = null;
-var dictionary = ["attack","hit","punch","dodge","look","jump","grab","pick","drop", "inventory"];
+var dictionary = ["fight","attack","hit","swing","dodge","look","jump","grab","pick","drop", "inventory", "wait"];
 var movementDictionary = ["climb","go","walk","run","travel","head","move","north","northeast","east","southeast","south","southwest","west","northwest","up","down",];
 dictionary = dictionary.concat(movementDictionary);
 var basicDictionary = dictionary;
@@ -12,11 +12,8 @@ var health = 10;
 var defense = 1;
 var luck = 1;
 var dodge = false;
+var dodgeCooldown = 0;
 
-
-/**
- * Rooms should always describe the area
- */
 class Room {
     location;
     description = "";
@@ -76,6 +73,13 @@ class Item extends Component {
         this.damage = damage;
     }
 }
+class Consumable extends Component {
+    health = 0;
+    constructor(name, health) {
+        super(name);
+        this;health = health;
+    }
+}
 
 function initializeRooms() {
     const starterRoad1 = new Room("Brooke Road");
@@ -118,11 +122,14 @@ function initializeRooms() {
     const grandTree = new Room("Grand Tree");
     grandTree.description = "The grand tree soars to towering heights, its branches reaching outward, while its mighty trunk radiates a mesmerizing glow.";
     const largeBranch = new Room("Large Branch");
-    largeBranch.description = "This branch is plenty sturdy. From here, you can see the entire field from here. Going up might make allow you to see further.";
+    largeBranch.description = "This branch is sturdy. From here, you can see the entire field from here. Going up might allow you to see further.";
     connectRooms(grandTree, largeBranch, "up", "down");
-    const appleBranch = new Room("Weak Branch");
-    appleBranch.description = "As you reach this point on the tree, you spot a shimmering apple. Will you grab it?";
+    const appleBranch = new CustomRoom("Weak Branch");
+    appleBranch.description = "You can see a kingdom southwest from here.";
     connectRooms(largeBranch, appleBranch, "up", "down");
+    const apple = new Consumable("Apple", 3);
+    apple.description = "A shimmering apple can be seen.";
+    appleBranch.components.push(apple);
 
     const wildField13 = new Room("Wild Fields");
     const wildField14 = new Room("Wild Fields");
@@ -131,8 +138,9 @@ function initializeRooms() {
     const wildField17 = new Room("Wild Fields");
 
     const wildField18 = new CustomRoom("Wild Fields");
-    const TMK = new Entity("TMK", 10, 5, 3);
+    const TMK = new Entity("Knight", 10, 5, 5, 2);
     TMK.description = "A metal knight stands tall and still here."
+    wildField18.components.push(TMK);
     
     const wildField19 = new Room("Wild Fields");
     const wildField20 = new Room("Wild Fields");
@@ -225,15 +233,21 @@ function initializeRooms() {
 
     test();
 }
+function addComponent(room, component) {
+    room.components.push(component);
+}
 
 function test() {
     const sword = new Item("Sword", 3);
     sword.description = "A steel sword lays on the ground here."
-    currentRoom.components.push(sword);
+    addComponent(currentRoom, sword);
+    
+    const apple = new Item("Apple", 0);
+    apple.description = "A slightly bruised apple."
 
     const goblin = new Entity("Goblin", 10, 0, 2, 3);
     goblin.description = "A goblin stands in your way."
-    currentRoom.components.push(goblin);
+    addComponent(currentRoom,goblin);
 }
 
 function returnItem(list) {
@@ -415,7 +429,7 @@ function handleClimb(words) {
     if (words.length == 1) {
         handleDirection("up");  //Defaults climb to go up
     } else {
-        direction = words[1];
+        let direction = words[1];
         if (direction == 'up' || direction == 'down') {
             if (words.length > 2) {
                 message = `I only understood you as far as climb ${direction}`;
@@ -427,14 +441,13 @@ function handleClimb(words) {
         } else {
             outputText("I only understood you as far as climb");
         }
-    }
-    
+    } 
 }
 
 function handleDirection(direction) {
     if(!currentRoom.directions.some(dir => {
         if(dir == direction) {
-            index = currentRoom.directions.indexOf(direction);
+            let index = currentRoom.directions.indexOf(direction);
             changeRoom(index); return true;
         }
     }))
@@ -448,7 +461,7 @@ function changeRoom(index) {
         outputText(currentRoom.description);
         currentRoom.entered = true;
     }
-    for (component of currentRoom.components) {
+    for (let component of currentRoom.components) {
         outputText(component.description);
     }
     topRightElement.textContent = currentRoom.location;
@@ -470,22 +483,25 @@ function updateEntities() {
             }
         }
     }
+    dodgeCooldown--;
     dodge = false;  //Disables dodge after attack process finishes to ensure dodge lasts for only one turn
 }
-
 
 //Don't forget to updateEntities after each successful command (if necessary).
 function handleAction(words) {
     let verb = words[0];
     switch (verb) {
+        case 'fight':
+            parseAttack(words);
+        break;
         case 'attack':
             parseAttack(words);
         break;
         case 'hit':
             parseAttack(words);
         break;
-        case 'punch':
-            parseAttack(words);
+        case 'swing':
+            parseSwing(words);
         break;
         case 'dodge':
             parseDodge(words);
@@ -504,6 +520,12 @@ function handleAction(words) {
         break;
         case 'drop':
             parseDrop(words);
+        break;
+        case 'wait':
+            parseWait(words);
+        break;
+        case 'inventory':
+            parseInventory(words);
         break;
     }
 }
@@ -526,7 +548,7 @@ function parseGrab(words) {
             if (words.length > 2) {
                 outputText("I only understood you as far as " + words[0] + " " + words[1]);
             } else {
-                if (correctComponent instanceof Item) {                 //Successful command
+                if (correctComponent instanceof Item || correctComponent instanceof Consumable) {                 //Successful command
                     outputText("You picked up the " + words[1] + ".");
                     inventory.push(returnItem(currentRoom.components.splice(currentRoom.components.indexOf(correctComponent),1)));
                     updateEntities();
@@ -608,8 +630,49 @@ function parseDodge(words) {
     if (words.length > 1) {
         outputText("I only understood you as far as dodge.");
     } else {
-        dodge = true;
+        if (dodgeCooldown > 0) {
+            outputText("You cannot dodge right now.");
+        } else {
+            let dodgeCheck = Math.ceil(Math.random() * 10)
+            let dodgeValue = Math.ceil(Math.random() * 5 + luck);   //Luck affects how likely you are to dodge
+            if (dodgeValue > dodgeCheck) {
+                dodge = true;
+            } else {
+                outputText("You failed to dodge!")
+            }
+            dodgeCooldown = 3;
+            updateEntities();
+        }
+    }
+}
+
+function parseWait(words) {
+    if (words.length > 1) {
+        outputText("I only understood you as far as wait.");
+    } else {
+        let result = Math.ceil(Math.random() * 100);
+        console.log(result);
+        if (result > 90)
+            outputText("Time passes. You ponder your existence and the existence of the universe. You are not sure what to do with yourself.");
+        else if (result > 50)
+            outputText("You wait. Silently.");
+        else
+            outputText("Time passes.");
         updateEntities();
+    }
+}
+
+function parseInventory(words) {
+    if (words.length > 1) {
+        outputText("I only understood you as far as wait.");
+    } else {
+        if (inventory.length == 0) {
+            outputText("Your inventory is currently empty.");
+        } else {
+            for (let i = 0; i < inventory.length; i++) {
+                outputText(inventory[i].name);
+            }
+        }
     }
 }
 
@@ -629,14 +692,20 @@ function parseAttack(words) {
                         words.splice(2,1);
                         parseAttack(words);
                     } else {
-                        if (detectComponent(inventory, words[2])) {                 //Successful command
+                        if (detectComponent(inventory, words[2])) {
                             weapon = findComponent(inventory, words[2]);
-                            updateEntities();
-                            attack(target, weapon);
-                        } else if (words[2] == 'fist' || words[2] == 'fists') {     //Successful command
+                            if (weapon instanceof Item) {
+                                attackEnemy(target, weapon);
+                                updateEntities();
+                                
+                            } else {
+                                outputText("You cannot attack with that!");
+                            }
+                        } else if (words[2] == 'fist' || words[2] == 'fists') {
                             let dummy = new Item("Fist",1);
+                            attackEnemy(target,dummy);
                             updateEntities();
-                            attack(target,dummy);
+                            
                         } else {
                             outputText("You do not have that!");
                         }
@@ -662,16 +731,56 @@ function parseAttack(words) {
     
 }
 
-function attack(entity, weapon) {
+function parseSwing(words) {
+    if (words.length > 1) {
+        let target = null;
+        let weapon = null;
+        if (detectComponent(inventory, words[1])) {
+            weapon = findComponent(inventory, words[1]);
+            if (words.length < 3) {
+                previous_verb = "swing";
+                previous_component1 = weapon.name;
+                outputText("What do you want to swing the " + weapon.name.toLowerCase() + " at?");
+            } else if (words.length == 3) {
+                if (detectComponent(currentRoom.components,words[2])) {
+                    target = findComponent(currentRoom.components, words[2]);
+                    if (target instanceof Entity) {
+                        attackEnemy(target, weapon);
+                        updateEntities();
+                    } else {
+                        outputText("You cannot attack that.");
+                    }
+                } else {
+                    outputText("There is no " + words[2] + " here.");
+                } 
+            } else if (words.length > 3) {
+                if (words[2] == "at") {
+                    words.splice(2,1);
+                    parseSwing(words);
+                } else {
+                    outputText("What are you even saying?");
+                }
+            }
+        } else {
+            outputText("You do not have that!");
+        }
+    } else {
+        outputText("What do you want to swing?");
+        previous_verb = "swing";
+    }
+}
+
+function attackEnemy(entity, weapon) {
     if (weapon.damage > entity.defense) {
         entity.health = entity.health + (entity.defense - weapon.damage);
+        if (entity.health < 0) {
+            outputText("You killed the " + entity.name.toLowerCase() + ".");
+            currentRoom.components.pop(entity);
+        } else {
+            outputText("The attack landed!");
+        }
     } else {
-        entity.health--;        //Pity the weak >:)
-    }
-    if (entity.health < 0) {
-        outputText("You killed the " + entity.name.toLowerCase() + ".");
-    } else {
-        outputText("The attack landed!");
+        outputText("The attack was ineffective.");
     }
 }
 
