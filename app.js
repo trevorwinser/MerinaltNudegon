@@ -565,7 +565,7 @@ function parseGrab(words) {
             if (words.length > 2) {
                 outputText("I only understood you as far as " + words[0] + " " + words[1]);
             } else {
-                if (correctComponent instanceof Item || correctComponent instanceof Consumable) {                 //Successful command
+                if (correctComponent instanceof Item || correctComponent instanceof Consumable) {
                     outputText("You picked up the " + words[1] + ".");
                     inventory.push(returnItem(currentRoom.components.splice(currentRoom.components.indexOf(correctComponent),1)));
                     updateEntities();
@@ -611,7 +611,6 @@ function parseDrop(words) {
             outputText("What do you want to drop?");
         }
     }
-    
 }
  
 function parseLook(words) {
