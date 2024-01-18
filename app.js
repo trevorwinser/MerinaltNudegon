@@ -4,7 +4,7 @@ var inventory = [];
 var previous_verb = null;
 var previous_component1 = null;
 var previous_component2 = null;
-var dictionary = ["fight","attack","hit","swing","dodge","look","jump","grab","pick","drop", "inventory", "wait"];
+var dictionary = ["fight","attack","hit","swing","slash","stab","dodge","look","jump","grab","pick","drop", "inventory", "wait","help","info"];
 var movementDictionary = ["climb","go","walk","run","travel","head","move","north","northeast","east","southeast","south","southwest","west","northwest","up","down",];
 dictionary = dictionary.concat(movementDictionary);
 var basicDictionary = dictionary;
@@ -66,6 +66,13 @@ class Entity extends Component {
         this.attackTime = attackTime;
     }  
 }
+class CustomEntity extends Entity {
+    names = [];
+    constructor(names, health, defense, strength, attackTime) {
+        super(names[0], health, defense, strength, attackTime);
+        this.names = names;
+    }
+}
 class Item extends Component {
     damage = 0;
     constructor(name, damage) {
@@ -85,6 +92,14 @@ function initializeRooms() {
     const starterRoad1 = new Room("Brooke Road");
     starterRoad1.description = "The road to the east looks promising, but there's nothing to the west.";
     currentRoom = starterRoad1;
+
+    const sword = new Item("Sword", 3);
+    sword.description = "A steel sword lays on the ground here."
+    addComponent(currentRoom, sword);
+
+    const goblin = new Entity("Goblin", 10, 0, 2, 3);
+    goblin.description = "A goblin stands in your way."
+    addComponent(currentRoom,goblin);
 
     const nothing = new Room("Nothing");
     nothing.description = "You see nothing beyond this point. You should probably head back.";
@@ -138,8 +153,8 @@ function initializeRooms() {
     const wildField17 = new Room("Wild Fields");
 
     const wildField18 = new CustomRoom("Wild Fields");
-    const TMK = new Entity("Knight", 10, 5, 5, 2);
-    TMK.description = "A metal knight stands tall and still here."
+    const TMK = new CustomEntity(["Knight","Armor"], 10, 5, 5, 2);
+    TMK.description = "A knight with seemingly no one inside stands tall and still here."
     wildField18.components.push(TMK);
     
     const wildField19 = new Room("Wild Fields");
@@ -197,7 +212,6 @@ function initializeRooms() {
     connectRooms(wildField19, beach5, "south", "north");
     connectRooms(wildField20, beach6, "south", "north");
 
-    
     connectRooms(wildField5, wildField1, "northeast", "southwest");
     connectRooms(wildField6, wildField2, "northeast", "southwest");
     connectRooms(wildField7, wildField3, "northeast", "southwest");
@@ -230,32 +244,18 @@ function initializeRooms() {
     connectRooms(wildField16, wildField20, "southeast", "northwest");
     connectRooms(wildField17, beach4, "southeast", "northwest");
     connectRooms(wildField19, beach6, "southeast", "northwest");
-
-    test();
 }
 function addComponent(room, component) {
     room.components.push(component);
 }
 
-function test() {
-    const sword = new Item("Sword", 3);
-    sword.description = "A steel sword lays on the ground here."
-    addComponent(currentRoom, sword);
-    
-    const apple = new Item("Apple", 0);
-    apple.description = "A slightly bruised apple."
-
-    const goblin = new Entity("Goblin", 10, 0, 2, 3);
-    goblin.description = "A goblin stands in your way."
-    addComponent(currentRoom,goblin);
-}
 
 function returnItem(list) {
     return list[0];
 }
 
 function separateCommand(sentence) {
-    sentence.toLowerCase();
+    sentence = sentence.toLowerCase();
     const words = sentence.split(" ");
     return words;
 }
@@ -469,14 +469,14 @@ function changeRoom(index) {
 
 function updateEntities() {
     for (let entity of currentRoom.components) {
-        if (entity instanceof Entity) {
+        if (entity instanceof Entity || entity instanceof CustomEntity) {
             entity.turnsInteracted++;
             console.log("Attack Time:" + entity.attackTime);
             console.log("Turns Interacted: " + entity.turnsInteracted);
             if (entity.attackTime - entity.turnsInteracted == 1) {
                 outputText("The " + entity.name.toLowerCase() + " is preparing its attack.");
             }
-            if (entity.turnsInteracted >= entity.attackTime) {
+            if (entity.turnsInteracted >= entity.attackTime && entity.attackTime != -1) {   //-1 represents an entity that does not attack. Too lazy to do a different way for now.
                 attackPlayer(entity);
                 entity.turnsInteracted = 0;
                 
@@ -498,6 +498,12 @@ function handleAction(words) {
             parseAttack(words);
         break;
         case 'hit':
+            parseAttack(words);
+        break;
+        case 'slash':
+            parseAttack(words);
+        break;
+        case 'stab':
             parseAttack(words);
         break;
         case 'swing':
@@ -526,6 +532,12 @@ function handleAction(words) {
         break;
         case 'inventory':
             parseInventory(words);
+        break;
+        case 'help':
+            parseHelp(words);
+        break;
+        case 'info':
+            parseInfo(words);
         break;
     }
 }
@@ -682,7 +694,7 @@ function parseAttack(words) {
         let weapon = null;
         if (detectComponent(currentRoom.components,words[1])) {
             target = findComponent(currentRoom.components, words[1]);
-            if (target instanceof Entity) {
+            if (target instanceof Entity || target instanceof CustomEntity) {
                 if (words.length < 3) {
                     outputText("What do you want to attack the " + target.name.toLowerCase() + " with?");
                     previous_verb = "attack";
@@ -744,7 +756,7 @@ function parseSwing(words) {
             } else if (words.length == 3) {
                 if (detectComponent(currentRoom.components,words[2])) {
                     target = findComponent(currentRoom.components, words[2]);
-                    if (target instanceof Entity) {
+                    if (target instanceof Entity || target instanceof CustomEntity) {
                         attackEnemy(target, weapon);
                         updateEntities();
                     } else {
@@ -767,6 +779,12 @@ function parseSwing(words) {
     } else {
         outputText("What do you want to swing?");
         previous_verb = "swing";
+    }
+}
+
+function parseHelp(words) {
+    if (words.length > 1) {
+        outputText("I only understood you as far as help")
     }
 }
 
@@ -801,7 +819,14 @@ function attackPlayer(entity) {
 function findComponent(list, name) {
     let foundComponent = null;
     list.forEach(component => {
-        if (component.name.toLowerCase() == name) {
+        if (component instanceof CustomEntity) {
+            for (let componentName of component.names) {
+                if (componentName.toLowerCase() == name) {
+                    foundComponent = component;
+                    break;
+                }
+            }
+        } else if (component.name.toLowerCase() == name) {
         foundComponent = component;
     }});
     return foundComponent;
@@ -810,7 +835,15 @@ function findComponent(list, name) {
 function detectComponent(list, name) {
     let found = false;
     list.forEach(component => {
-        if (component.name.toLowerCase() == name) {
+        if (component instanceof CustomEntity) {
+            for (let componentName of component.names) {
+                console.log(componentName.toLowerCase() == name);
+                if (componentName.toLowerCase() == name) {
+                    found = true;
+                    break;
+                }
+            }
+        } else if (component.name.toLowerCase() == name) {
         found = true;
     }});
     return found;
