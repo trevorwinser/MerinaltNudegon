@@ -13,6 +13,7 @@ var defense = 1;
 var luck = 1;
 var dodge = false;
 var dodgeCooldown = 0;
+var actionsPerformed = [];
 
 class Room {
     location;
@@ -276,6 +277,7 @@ function parse(words) {
 function checkSyntax(words) {
     let verb = words[0];
     if (checkVerb(verb)) {
+        if (!actionsPerformed.includes(verb)) actionsPerformed.push(verb);
         if (movementDictionary.includes(verb)) {
             handleMovement(words);
         } else {
@@ -546,6 +548,9 @@ function parseGrab(words) {
     if (words[0] == "pick" && words[1] == "up") {
         words.splice(1, 1);
         parseGrab(words);
+    } else if (words[0] == "pick" && words[2] == "up") {
+        words.splice(2,2);
+        parseGrab(words);
     } else {
         let grab = false;
         let correctComponent = null;
@@ -598,7 +603,9 @@ function parseDrop(words) {
         }
     } else {
         if (words.length == 2) {
-            outputText("You do not possess " + words[1] + "")
+            outputText("You do not possess " + words[1] + ".");
+        } else if (words.length > 2) {
+            outputText("I only understood you as far as drop.");
         } else {
             previous_verb = "drop";
             outputText("What do you want to drop?");
@@ -784,7 +791,27 @@ function parseSwing(words) {
 
 function parseHelp(words) {
     if (words.length > 1) {
-        outputText("I only understood you as far as help")
+        outputText("I only understood you as far as help.");
+    } else {
+        if (!(actionsPerformed.includes("grab") || actionsPerformed.includes("pick") )) {
+            outputText("Try picking something up.")
+        } else if (!(actionsPerformed.includes("attack") || actionsPerformed.includes("stab") || actionsPerformed.includes("hit") || actionsPerformed.includes("swing") || actionsPerformed.includes("slash") || actionsPerformed.includes("fight"))) {
+            outputText("You should try attacking something.");
+        } else if (!actionsPerformed.includes("dodge")) {
+            outputText("Have you tried dodging? Man it is awesome. It does take some luck, but it is totally worth trying.");
+        } else if (!(actionsPerformed.includes("north") || actionsPerformed.includes("northeast") || actionsPerformed.includes("east") || actionsPerformed.includes("southeast") || actionsPerformed.includes("south") || actionsPerformed.includes("southwest") || actionsPerformed.includes("west") || actionsPerformed.includes("northwest"))) {
+            outputText("If you are still having trouble traversing, try using cardinal and ordinal directions.");
+        } else {
+            outputText("You should try exploring a bit more.");
+        }
+    }
+}
+
+function parseInfo(words) {
+    if (words.length > 1) {
+        outputText("I only understood you as far as info.");
+    } else {
+        outputText("Mirenalt Nudgeon is a terminal dungeon where the player must learn by playing and win by learning. A wonderful and confusing land awaits you in the world of Merinalt.");
     }
 }
 
