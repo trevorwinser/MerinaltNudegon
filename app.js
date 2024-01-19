@@ -4,7 +4,7 @@ var inventory = [];
 var previous_verb = null;
 var previous_component1 = null;
 var previous_component2 = null;
-var dictionary = ["fight","attack","hit","swing","slash","stab","dodge","look","jump","grab","pick","drop", "inventory", "wait","help","info"];
+var dictionary = ["fight","attack","hit","swing","slash","stab","dodge","look","jump","grab","pick","drop","inventory","wait","help","info","stop","start","play"];
 var movementDictionary = ["climb","go","walk","run","travel","head","move","north","northeast","east","southeast","south","southwest","west","northwest","up","down",];
 dictionary = dictionary.concat(movementDictionary);
 var basicDictionary = dictionary;
@@ -14,12 +14,15 @@ var luck = 1;
 var dodge = false;
 var dodgeCooldown = 0;
 var actionsPerformed = [];
+var playlist = ["audio/BeginnerArea.mp3","audio/Enemy_Defeated.mp3","audio/Kingdom.mp3","audio/Boss.mp3"];
+var playlistIndex = 0;
+var audio = null;
 
 class Room {
     location;
     description = "";
     components = [];
-    dictionary = basicDictionary;
+    dict = dictionary;
     connectedRooms = [];
     directions = [];    //corresponds to the direction of connected rooms.
     entered = false;
@@ -52,7 +55,7 @@ class Component {
     }
 }
 
-class Entity extends Component {
+class Enemy extends Component {
     health = 1;
     defense = 0;
     strength = 0;
@@ -67,11 +70,18 @@ class Entity extends Component {
         this.attackTime = attackTime;
     }  
 }
-class CustomEntity extends Entity {
+class CustomEnemy extends Enemy {
     names = [];
     constructor(names, health, defense, strength, attackTime) {
         super(names[0], health, defense, strength, attackTime);
         this.names = names;
+    }
+}
+class NPC extends Component {
+    dialogue = [];
+    constructor(name, dialogue) {
+        super(name);
+        this.dialogue = dialogue;
     }
 }
 class Item extends Component {
@@ -90,6 +100,7 @@ class Consumable extends Component {
 }
 
 function initializeRooms() {
+    handleMusic();
     const starterRoad1 = new Room("Brooke Road");
     starterRoad1.description = "The road to the east looks promising, but there's nothing to the west.";
     currentRoom = starterRoad1;
@@ -98,7 +109,7 @@ function initializeRooms() {
     sword.description = "A steel sword lays on the ground here."
     addComponent(currentRoom, sword);
 
-    const goblin = new Entity("Goblin", 10, 0, 2, 3);
+    const goblin = new Enemy("Goblin", 10, 0, 2, 3);
     goblin.description = "A goblin stands in your way."
     addComponent(currentRoom,goblin);
 
@@ -154,7 +165,7 @@ function initializeRooms() {
     const wildField17 = new Room("Wild Fields");
 
     const wildField18 = new CustomRoom("Wild Fields");
-    const TMK = new CustomEntity(["Knight","Armor"], 10, 5, 5, 2);
+    const TMK = new CustomEnemy(["Knight","Armor"], 10, 5, 5, 2);
     TMK.description = "A knight with seemingly no one inside stands tall and still here."
     wildField18.components.push(TMK);
     
@@ -288,7 +299,7 @@ function checkSyntax(words) {
 
 function checkVerb(verb) { 
     if (dictionary.includes(verb)) {
-        if (currentRoom.dictionary.includes(verb)) {
+        if (currentRoom.dict.includes(verb)) {
             return true;
         }
         outputText("You cannot do that here.");
@@ -469,18 +480,18 @@ function changeRoom(index) {
     topRightElement.textContent = currentRoom.location;
 }
 
-function updateEntities() {
-    for (let entity of currentRoom.components) {
-        if (entity instanceof Entity || entity instanceof CustomEntity) {
-            entity.turnsInteracted++;
-            console.log("Attack Time:" + entity.attackTime);
-            console.log("Turns Interacted: " + entity.turnsInteracted);
-            if (entity.attackTime - entity.turnsInteracted == 1) {
-                outputText("The " + entity.name.toLowerCase() + " is preparing its attack.");
+function updateEnemies() {
+    for (let enemy of currentRoom.components) {
+        if (enemy instanceof Enemy || enemy instanceof CustomEnemy) {
+            enemy.turnsInteracted++;
+            // console.log("Attack Time:" + enemy.attackTime);
+            // console.log("Turns Interacted: " + enemy.turnsInteracted);
+            if (enemy.attackTime - enemy.turnsInteracted == 1) {
+                outputText("The " + enemy.name.toLowerCase() + " is preparing its attack.");
             }
-            if (entity.turnsInteracted >= entity.attackTime && entity.attackTime != -1) {   //-1 represents an entity that does not attack. Too lazy to do a different way for now.
-                attackPlayer(entity);
-                entity.turnsInteracted = 0;
+            if (enemy.turnsInteracted >= enemy.attackTime && enemy.attackTime != -1) {   //-1 represents an enemy that does not attack. Too lazy to do a different way for now.
+                attackPlayer(enemy);
+                enemy.turnsInteracted = 0;
                 
             }
         }
@@ -489,7 +500,7 @@ function updateEntities() {
     dodge = false;  //Disables dodge after attack process finishes to ensure dodge lasts for only one turn
 }
 
-//Don't forget to updateEntities after each successful command (if necessary).
+//Don't forget to updateEnemies after each successful command (if necessary).
 function handleAction(words) {
     let verb = words[0];
     switch (verb) {
@@ -541,6 +552,15 @@ function handleAction(words) {
         case 'info':
             parseInfo(words);
         break;
+        case 'stop':
+            parseStop(words);
+        break;
+        case 'start':
+            parseStart(words);
+        break;
+        case 'play':
+            parseStart(words);
+        break;
     }
 }
 
@@ -568,7 +588,7 @@ function parseGrab(words) {
                 if (correctComponent instanceof Item || correctComponent instanceof Consumable) {
                     outputText("You picked up the " + words[1] + ".");
                     inventory.push(returnItem(currentRoom.components.splice(currentRoom.components.indexOf(correctComponent),1)));
-                    updateEntities();
+                    updateEnemies();
                 } else {
                     outputText("You cannot pick that up.");
                 }
@@ -599,7 +619,7 @@ function parseDrop(words) {
         } else {                 //Successful command
             outputText("You dropped the " + correctComponent.name.toLowerCase() + ".");
             currentRoom.components.push(returnItem(inventory.splice(inventory.indexOf(correctComponent),1))); 
-            updateEntities();
+            updateEnemies();
         }
     } else {
         if (words.length == 2) {
@@ -640,7 +660,7 @@ function parseJump(words) {
         outputText("I only understood you as far as jump");
     } else {                 //Successful command
         outputText("Wheeeeee!");
-        updateEntities();
+        updateEnemies();
     }
 }
 
@@ -659,7 +679,7 @@ function parseDodge(words) {
                 outputText("You failed to dodge!")
             }
             dodgeCooldown = 3;
-            updateEntities();
+            updateEnemies();
         }
     }
 }
@@ -676,7 +696,7 @@ function parseWait(words) {
             outputText("You wait. Silently.");
         else
             outputText("Time passes.");
-        updateEntities();
+        updateEnemies();
     }
 }
 
@@ -700,7 +720,7 @@ function parseAttack(words) {
         let weapon = null;
         if (detectComponent(currentRoom.components,words[1])) {
             target = findComponent(currentRoom.components, words[1]);
-            if (target instanceof Entity || target instanceof CustomEntity) {
+            if (target instanceof Enemy || target instanceof CustomEnemy) {
                 if (words.length < 3) {
                     outputText("What do you want to attack the " + target.name.toLowerCase() + " with?");
                     previous_verb = "attack";
@@ -714,7 +734,7 @@ function parseAttack(words) {
                             weapon = findComponent(inventory, words[2]);
                             if (weapon instanceof Item) {
                                 attackEnemy(target, weapon);
-                                updateEntities();
+                                updateEnemies();
                                 
                             } else {
                                 outputText("You cannot attack with that!");
@@ -722,7 +742,7 @@ function parseAttack(words) {
                         } else if (words[2] == 'fist' || words[2] == 'fists') {
                             let dummy = new Item("Fist",1);
                             attackEnemy(target,dummy);
-                            updateEntities();
+                            updateEnemies();
                             
                         } else {
                             outputText("You do not have that!");
@@ -762,9 +782,9 @@ function parseSwing(words) {
             } else if (words.length == 3) {
                 if (detectComponent(currentRoom.components,words[2])) {
                     target = findComponent(currentRoom.components, words[2]);
-                    if (target instanceof Entity || target instanceof CustomEntity) {
+                    if (target instanceof Enemy || target instanceof CustomEnemy) {
                         attackEnemy(target, weapon);
-                        updateEntities();
+                        updateEnemy();
                     } else {
                         outputText("You cannot attack that.");
                     }
@@ -814,12 +834,64 @@ function parseInfo(words) {
     }
 }
 
-function attackEnemy(entity, weapon) {
-    if (weapon.damage > entity.defense) {
-        entity.health = entity.health + (entity.defense - weapon.damage);
-        if (entity.health < 0) {
-            outputText("You killed the " + entity.name.toLowerCase() + ".");
-            currentRoom.components.pop(entity);
+function parseStop(words) {
+    if (words.length == 1) {
+        previous_verb = "stop";
+        outputText("What would you like to stop?");
+    } else if (words.length == 2) {
+        if (words[1] == 'sound' || words[1] == 'music') {
+            if (audio != null) 
+                audio.pause();
+        } else if (words[1] == 'time') {
+            outputText("Time has successfully stopped until your next action.");
+        } else {
+            outputText("I only understood you as far as stop.");
+        }
+    } else {
+        if (words[1] == 'sound' || words[1] == 'music') {
+            outputText("I only understood you as far as stop " +words[1]+ ".");
+        } else if (words[1] == 'time') {
+            outputText("I only understood you as far as stop time.");
+        } else {
+            outputText("I only understood you as far as stop.");
+        }
+    }
+}
+
+function parseStart(words) { 
+    if (words.length == 1) {
+        previous_verb = "play";
+        outputText("What would you like to play?");
+    } else if (words.length == 2) {
+        if (words[1] == "sound" || words[1] == "music") {
+            if (audio != null) 
+                audio.play();
+        } else if (words[1] == "mirenalt") {
+            outputText("You are already playing that game!");
+        } else {
+            outputText("I only understood you as far as " + words[0] + ".");
+        }
+    } else if (words.length == 3) {
+        if (words[1] == "mirenalt" && words[2] == "nudgeon") {
+            outputText("You are already playing that game!");
+        } else {
+            if (words[1] == "mirenalt") {
+                outputText("I only understood you as far as play mirenalt.");
+            } else {
+                outputText("I only understood you as far as play.");
+            }
+        }
+    } else {
+        outputText("I only understood you as far as play.");
+    }
+}
+
+function attackEnemy(enemy, weapon) {
+    if (weapon.damage > enemy.defense) {
+        enemy.health = enemy.health + (enemy.defense - weapon.damage);
+        if (enemy.health < 0) {
+            outputText("You killed the " + enemy.name.toLowerCase() + ".");
+            currentRoom.components.pop(enemy);
         } else {
             outputText("The attack landed!");
         }
@@ -828,11 +900,11 @@ function attackEnemy(entity, weapon) {
     }
 }
 
-function attackPlayer(entity) {
+function attackPlayer(enemy) {
     if (!dodge) {
-        if (entity.strength > defense) { 
-            health = health + (defense - entity.strength);
-            outputText("The " + entity.name.toLowerCase() + " attacked you!");
+        if (enemy.strength > defense) { 
+            health = health + (defense - enemy.strength);
+            outputText("The " + enemy.name.toLowerCase() + " attacked you!");
             if (health <= 0) {
                 outputText("You died. Game over.")
             }
@@ -845,7 +917,7 @@ function attackPlayer(entity) {
 function findComponent(list, name) {
     let foundComponent = null;
     list.forEach(component => {
-        if (component instanceof CustomEntity) {
+        if (component instanceof CustomEnemy) {
             for (let componentName of component.names) {
                 if (componentName.toLowerCase() == name) {
                     foundComponent = component;
@@ -861,7 +933,7 @@ function findComponent(list, name) {
 function detectComponent(list, name) {
     let found = false;
     list.forEach(component => {
-        if (component instanceof CustomEntity) {
+        if (component instanceof CustomEnemy) {
             for (let componentName of component.names) {
                 console.log(componentName.toLowerCase() == name);
                 if (componentName.toLowerCase() == name) {
@@ -892,6 +964,19 @@ function outputText(txt) {
     terminalOutput.appendChild(p);
     window.scrollTo(0, document.body.scrollHeight);
     terminalCommand.value = "";
+}
+
+function handleMusic() {
+    audio = new Audio(playlist[playlistIndex]);
+    audio.volume = 0.1;
+    playMusic();
+    playlistIndex++;
+    if (playlistIndex > playlist.length-1) playlistIndex = 0;
+}
+
+function playMusic() {
+    audio.play();
+    audio.addEventListener('ended', handleMusic);
 }
 
 window.onload = (event) => {
