@@ -17,6 +17,7 @@ var actionsPerformed = [];
 var playlist = ["audio/BeginnerArea.mp3","audio/Enemy_Defeated.mp3","audio/Kingdom.mp3","audio/Boss.mp3"];
 var playlistIndex = 0;
 var audio = null;
+let musicPlayed = false;
 
 class Room {
     location;
@@ -100,7 +101,6 @@ class Consumable extends Component {
 }
 
 function initializeRooms() {
-    handleMusic();
     const starterRoad1 = new Room("Brooke Road");
     starterRoad1.description = "The road to the east looks promising, but there's nothing to the west.";
     currentRoom = starterRoad1;
@@ -285,6 +285,7 @@ function parse(words) {
     
     checkSyntax(words);
 }
+
 function checkSyntax(words) {
     let verb = words[0];
     if (checkVerb(verb)) {
@@ -906,7 +907,13 @@ function attackPlayer(enemy) {
             health = health + (defense - enemy.strength);
             outputText("The " + enemy.name.toLowerCase() + " attacked you!");
             if (health <= 0) {
-                outputText("You died. Game over.")
+                outputText("You died. Game over.");
+                var input = document.getElementById("terminal-input");
+                if (input) {
+                    input.remove();
+                } else {
+                    console.log("Element not found.");
+                }
             }
         }
     } else {
@@ -967,16 +974,21 @@ function outputText(txt) {
 }
 
 function handleMusic() {
-    audio = new Audio(playlist[playlistIndex]);
-    audio.volume = 0.1;
-    playMusic();
+    musicPlayed = true;
+    var song = new Audio(playlist[playlistIndex]);
+    song.volume = 0.1;
+    audio = song;
+    playMusic(song);
     playlistIndex++;
     if (playlistIndex > playlist.length-1) playlistIndex = 0;
 }
 
-function playMusic() {
-    audio.play();
-    audio.addEventListener('ended', handleMusic);
+function playMusic(song) {
+    if (musicPlayed) {
+        song.play();
+        song.addEventListener('ended', handleMusic);
+        document.removeEventListener('click', handleMusic);
+    }
 }
 
 window.onload = (event) => {
@@ -987,6 +999,7 @@ window.onload = (event) => {
         outputText(component.description);
     }
     currentRoom.entered = true;
+    document.addEventListener('click', handleMusic);
 }
 
 const terminalOutput = document.getElementById("terminal-output");
