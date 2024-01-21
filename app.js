@@ -4,8 +4,8 @@ var inventory = [];
 var previous_verb = null;
 var previous_component1 = null;
 var previous_component2 = null;
-var dictionary = ["fight","attack","hit","swing","slash","stab","dodge","look","jump","grab","pick","drop","inventory","wait","help","info","stop","start","play"];
-var movementDictionary = ["climb","go","walk","run","travel","head","move","north","northeast","east","southeast","south","southwest","west","northwest","up","down",];
+var dictionary = ["fight","attack","hit","swing","slash","stab","dodge","look","grab","pick","drop","inventory","wait","help","info","stop","start","play"];
+var movementDictionary = ["go","walk","run","travel","head","move","north","northeast","east","southeast","south","southwest","west","northwest","climb","jump"];
 dictionary = dictionary.concat(movementDictionary);
 var basicDictionary = dictionary;
 var health = 10;
@@ -31,7 +31,6 @@ class Room {
         this.location = location;
     }
 }
-
 class CustomRoom extends Room {
     constructor(location) {
         super(location);
@@ -47,7 +46,6 @@ class CustomRoom extends Room {
         dictionary.push(action);
     }
 }
-
 class Component {
     name;
     description;
@@ -55,7 +53,6 @@ class Component {
         this.name = name;
     }
 }
-
 class Enemy extends Component {
     health = 1;
     defense = 0;
@@ -92,6 +89,13 @@ class Item extends Component {
         this.damage = damage;
     }
 }
+class CustomItem extends Item {
+    names = [];
+    constructor(names, damage) {
+        super(names[0], damage);
+        this.names = names;
+    }
+}
 class Consumable extends Component {
     health = 0;
     constructor(name, health) {
@@ -109,17 +113,17 @@ function initializeRooms() {
     sword.description = "A steel sword lays on the ground here."
     addComponent(currentRoom, sword);
 
-    const goblin = new Enemy("Goblin", 10, 0, 2, 3);
-    goblin.description = "A goblin stands in your way."
-    addComponent(currentRoom,goblin);
-
     const nothing = new Room("Nothing");
     nothing.description = "You see nothing beyond this point. You should probably head back.";
     connectRooms(starterRoad1, nothing, "west", "east");
 
     const beginnerFork = new Room("Fork in the Road");
-    beginnerFork.description = "A fork in the road has two trails. One heads northeast, and the other goes from east to west.";
+    beginnerFork.description = "A fork in the road has two trails. One heads northeast, and the other heads east.";
     connectRooms(beginnerFork, starterRoad1, "west", "east");
+
+    const goblin = new Enemy("Goblin", 10, 0, 2, 3);
+    goblin.description = "A goblin stands in your way."
+    addComponent(beginnerFork,goblin);
 
     //Not a custom room, because once the user types "open door" with a key, the room is obsolete.
     const goblinDoor = new Room("Mysterious Door");
@@ -256,11 +260,21 @@ function initializeRooms() {
     connectRooms(wildField16, wildField20, "southeast", "northwest");
     connectRooms(wildField17, beach4, "southeast", "northwest");
     connectRooms(wildField19, beach6, "southeast", "northwest");
+
+    //A seaside kingdom troubled by the lands
+    const lowestoftTrail1 = new Room("Lowestoft Trail");
+    lowestoftTrail1.description = "The Lowestoft Kingdom spans southwest from here. To the northeast is a vast field.";
+    const lowestoftTrail2 = new Room("Lowestoft Trail");
+
+    connectRooms(wildField19, lowestoftTrail1,"southwest","northeast");
+    connectRooms(lowestoftTrail1, lowestoftTrail2,"southwest","northeast");
+    currentRoom = grandTree;
 }
+
+
 function addComponent(room, component) {
     room.components.push(component);
 }
-
 
 function returnItem(list) {
     return list[0];
@@ -291,7 +305,9 @@ function checkSyntax(words) {
     if (checkVerb(verb)) {
         if (!actionsPerformed.includes(verb)) actionsPerformed.push(verb);
         if (movementDictionary.includes(verb)) {
-            handleMovement(words);
+            if (!enemiesInRoom()) {
+                handleMovement(words);
+            }
         } else {
             handleAction(words);
         }
@@ -315,157 +331,103 @@ function checkVerb(verb) {
 function handleMovement(words) {
     switch (words[0]) {
         case 'go':
-            if (words.length > 1) {
-                words = words.slice(1);
-                handleMovement(words);
-            } else {
-                outputText("Which direction do you want to go?");
-                previous_verb = "go";
-            }
+            parseMove(words);
         break;
         case 'walk':
-            if (words.length > 1) {
-                words = words.slice(1);
-                handleMovement(words);
-            } else {
-                outputText("Which direction do you want to go?");
-                previous_verb = "go";
-            }
+            parseMove(words);
         break;
         case 'run':
-            if (words.length > 1) {
-                words = words.slice(1);
-                handleMovement(words);
-            } else {
-                outputText("Which direction do you want to go?");
-                previous_verb = "go";
-            }
+            parseMove(words);
         break;
         case 'travel':
-            if (words.length > 1) {
-                words = words.slice(1);
-                handleMovement(words);
-            } else {
-                outputText("Which direction do you want to go?");
-                previous_verb = "go";
-            }
+            parseMove(words);
         break;
         case 'head':
-            if (words.length > 1) {
-                words = words.slice(1);
-                handleMovement(words);
-            } else {
-                outputText("Which direction do you want to go?");
-                previous_verb = "go";
-            }
+            parseMove(words);
         break;
         case 'move':
-            if (words.length > 1) {
-                words = words.slice(1);
-                handleMovement(words);
-            } else {
-                outputText("Which direction do you want to go?");
-                previous_verb = "go";
-            }
+            parseMove(words);
         break;
         case 'north':
-            if (words.length > 1) {
-                outputText("I only understod you as far as north");
-            } else {
-                handleDirection("north");
-            }
+            parseMove(words);
         break;
         case 'northeast':
-            if (words.length > 1) {
-                outputText("I only understod you as far as northeast");
-            } else {
-                handleDirection("northeast");
-            }
+            parseMove(words);
         break;
         case 'east':
-            if (words.length > 1) {
-                outputText("I only understod you as far as east");
-            } else {
-                handleDirection("east");
-            }
+            parseMove(words);
         break;
         case 'southeast':
-            if (words.length > 1) {
-                outputText("I only understod you as far as southeast");
-            } else {
-                handleDirection("southeast");
-            }
+            parseMove(words);
         break;
         case 'south':
-            if (words.length > 1) {
-                outputText("I only understod you as far as south");
-            } else {
-                handleDirection("south");
-            }
+            parseMove(words);
         break;
         case 'southwest':
-            if (words.length > 1) {
-                outputText("I only understod you as far as southwest");
-            } else {
-                handleDirection("southwest");
-            }
+            parseMove(words);
         break;
         case 'west':
-            if (words.length > 1) {
-                outputText("I only understod you as far as west");
-            } else {
-                handleDirection("west");
-            }
+            parseMove(words);
         break;
         case 'northwest':
-            if (words.length > 1) {
-                outputText("I only understod you as far as northwest");
-            } else {
-                handleDirection("northwest");
-            }
+            parseMove(words);
         break;
         case 'climb':
-            handleClimb(words);
+            parseClimb(words);
         break;
-        case 'up':
-            outputText("How do you think you're going to do that?");
-        break;
-        case 'down':
-            outputText("How do you think you're going to do that?");
+        case 'jump':
+            parseJump(words);
         break;
         default:
             outputText("That's not a valid direction.");    //SHOULD NOT HAPPEN.
     }
-    return false;   //This makes it so handleVerb does not happen
 }
 
-function handleClimb(words) {
+function parseMove(words) {
+    if (words.length == 1) {
+        if (words[0] == "go" || words[0] == "walk" || words[0] == "run" || words[0] == "travel" || words[0] == "head") {
+            outputText("Which direction do you want to go?");
+            previous_verb = "go";
+        } else {
+            handleDirection(words[0]);
+        }
+    } else if (words.length == 2) {
+        if (words[0] == "go" || words[0] == "walk" || words[0] == "run" || words[0] == "travel" || words[0] == "head") {
+            handleDirection(words[1]);
+        } else {
+            outputText("I only understood you as far as " + words[0] + ".");
+        }
+    }
+}
+
+function parseClimb(words) {
     if (words.length == 1) {
         handleDirection("up");  //Defaults climb to go up
     } else {
-        let direction = words[1];
-        if (direction == 'up' || direction == 'down') {
+        if (words[1] == 'up' || words[1] == 'down') {
             if (words.length > 2) {
-                message = `I only understood you as far as climb ${direction}`;
-                outputText(message);
+                outputText("I only understood you as far as climb " + words[1] + ".");
             }
             else {
-                handleDirection(direction);
+                handleDirection(words[1]);
             }
         } else {
-            outputText("I only understood you as far as climb");
+            outputText("I only understood you as far as climb.");
         }
     } 
 }
 
 function handleDirection(direction) {
     if(!currentRoom.directions.some(dir => {
-        if(dir == direction) {
+        if (dir == direction) {
             let index = currentRoom.directions.indexOf(direction);
             changeRoom(index); return true;
         }
-    }))
-        outputText("You can't go that direction");
+        })) {
+            outputText("You cannot go that direction.");
+            return false;
+        }
+
 }
 
 function changeRoom(index) {
@@ -479,6 +441,16 @@ function changeRoom(index) {
         outputText(component.description);
     }
     topRightElement.textContent = currentRoom.location;
+}
+
+function enemiesInRoom() {
+    for (let component of currentRoom.components) {
+        if (component instanceof Enemy || component instanceof CustomEnemy) {
+            outputText("You cannot do that right now!");
+            return true;
+        }
+    }
+    return false;
 }
 
 function updateEnemies() {
@@ -528,9 +500,6 @@ function handleAction(words) {
         break;
         case 'look':
             parseLook(words);
-        break;
-        case 'jump':
-            parseJump(words);
         break;
         case 'grab':
             parseGrab(words);
@@ -637,18 +606,13 @@ function parseDrop(words) {
 function parseLook(words) {
     if (words.length > 1) {
         if (words[1] == "around") {
-            if (words.length > 2) {
-                outputText("I only understood you as far as look around.");
-            } else {
-                outputText(currentRoom.description); 
-                for (let component of currentRoom.components) {
-                    outputText(component.description);
-                }  
-            }
+            words.splice(1,1);
+            parseLook(words);
         } else {
             outputText("I only understood you as far as look.");
         }
     } else {
+        outputText(currentRoom.location);
         outputText(currentRoom.description);
         for (let component of currentRoom.components) {
             outputText(component.description);
@@ -657,11 +621,20 @@ function parseLook(words) {
 }
 
 function parseJump(words) {
-    if (words.length > 1) {
-        outputText("I only understood you as far as jump");
-    } else {                 //Successful command
-        outputText("Wheeeeee!");
-        updateEnemies();
+    if (words.length == 1) {
+        if (handleDirection("down")) {
+            outputText("Wheeeeee!");
+        }
+    } else if (words.length == 2) {
+        if (words[1] == "down") {
+            if (handleDirection("down")) {
+                outputText("Wheeeeee!");
+            }
+        } else {
+            outputText("I only understood you as far as jump.");
+        }
+    } else {
+        outputText("I only understood you as far as jump.");
     }
 }
 
@@ -815,12 +788,12 @@ function parseHelp(words) {
     } else {
         if (!(actionsPerformed.includes("grab") || actionsPerformed.includes("pick") )) {
             outputText("Try picking something up.")
+        } else if (!(actionsPerformed.includes("north") || actionsPerformed.includes("northeast") || actionsPerformed.includes("east") || actionsPerformed.includes("southeast") || actionsPerformed.includes("south") || actionsPerformed.includes("southwest") || actionsPerformed.includes("west") || actionsPerformed.includes("northwest"))) {
+            outputText("If you are still having trouble traversing, try using cardinal and ordinal directions.");
         } else if (!(actionsPerformed.includes("attack") || actionsPerformed.includes("stab") || actionsPerformed.includes("hit") || actionsPerformed.includes("swing") || actionsPerformed.includes("slash") || actionsPerformed.includes("fight"))) {
             outputText("You should try attacking something.");
         } else if (!actionsPerformed.includes("dodge")) {
             outputText("Have you tried dodging? Man it is awesome. It does take some luck, but it is totally worth trying.");
-        } else if (!(actionsPerformed.includes("north") || actionsPerformed.includes("northeast") || actionsPerformed.includes("east") || actionsPerformed.includes("southeast") || actionsPerformed.includes("south") || actionsPerformed.includes("southwest") || actionsPerformed.includes("west") || actionsPerformed.includes("northwest"))) {
-            outputText("If you are still having trouble traversing, try using cardinal and ordinal directions.");
         } else {
             outputText("You should try exploring a bit more.");
         }
@@ -841,8 +814,10 @@ function parseStop(words) {
         outputText("What would you like to stop?");
     } else if (words.length == 2) {
         if (words[1] == 'sound' || words[1] == 'music') {
-            if (audio != null) 
+            if (audio != null) {
+                outputText("Music has stopped.");
                 audio.pause();
+            }
         } else if (words[1] == 'time') {
             outputText("Time has successfully stopped until your next action.");
         } else {
@@ -865,8 +840,10 @@ function parseStart(words) {
         outputText("What would you like to play?");
     } else if (words.length == 2) {
         if (words[1] == "sound" || words[1] == "music") {
-            if (audio != null) 
+            if (audio != null) {
+                outputText("Music has started.");
                 audio.play();
+            }
         } else if (words[1] == "mirenalt") {
             outputText("You are already playing that game!");
         } else {
@@ -954,10 +931,12 @@ function detectComponent(list, name) {
     return found;
 }
 
-function promptDirection() {
-    outputText("Which direction do you want to go?");
-}
-
+/**
+* x -> First room |
+* y -> Second room |
+* xdir -> Direction to y relative to x |
+* ydir -> Direction to x relative to y
+*/
 function connectRooms(x, y, xdir, ydir) {
     x.connectedRooms.push(y);
     x.directions.push(xdir)
@@ -1016,7 +995,7 @@ function checkEnter(k) {
         outputText(command);
         terminalCommand.value = "";
         if (command.length > 164) {
-            outputText("I'm sorry, but that command is too long.")
+            outputText("I am sorry, but that command is too long.")
         } else {
             parse(separateCommand(command)); 
         }
