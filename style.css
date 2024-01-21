@@ -43,3 +43,8 @@ input[type="text"] {
     color: #fff;
     font-family: 'myFirstFont', sans-serif; /* Fallback to a generic sans-serif font */
 }
+#logo {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+}
