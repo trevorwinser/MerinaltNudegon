@@ -268,7 +268,6 @@ function initializeRooms() {
 
     connectRooms(wildField19, lowestoftTrail1,"southwest","northeast");
     connectRooms(lowestoftTrail1, lowestoftTrail2,"southwest","northeast");
-    currentRoom = grandTree;
 }
 
 
