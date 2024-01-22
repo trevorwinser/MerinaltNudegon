@@ -156,9 +156,12 @@ function initializeRooms() {
     const largeBranch = new Room("Large Branch");
     largeBranch.description = "This branch is sturdy. From here, you can see the entire field from here. Going up might allow you to see further.";
     connectRooms(grandTree, largeBranch, "up", "down");
+
+    //Literal psychopath coding.
     const appleBranch = new CustomRoom("Small Branch", [removeRoom,() => outputText("Oh no! The branch broke as you grabbed the apple."), () => health--], [() => words[0] === "grab" && words[1] === "apple",true,true]);
     appleBranch.description = "You can see a kingdom southwest from here. This branch seems weak enough to break from too much movement.";
     connectRooms(largeBranch, appleBranch, "up", "down");
+
     const apple = new Consumable("Apple", 3);
     apple.description = "A shimmering apple can be seen.";
     appleBranch.components.push(apple);
@@ -270,7 +273,6 @@ function initializeRooms() {
     connectRooms(wildField19, lowestoftTrail1,"southwest","northeast");
     connectRooms(lowestoftTrail1, lowestoftTrail2,"southwest","northeast");
 
-    currentRoom = grandTree;
 }
 
 function addComponent(room, component) {
@@ -1013,7 +1015,7 @@ window.onload = (event) => {
         outputText(component.description);
     }
     currentRoom.entered = true;
-    // document.addEventListener('click', handleMusic);
+    document.addEventListener('click', handleMusic);
 }
 
 const terminalOutput = document.getElementById("terminal-output");
