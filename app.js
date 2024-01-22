@@ -4,7 +4,7 @@ var inventory = [];
 var previous_verb = null;
 var previous_component1 = null;
 var previous_component2 = null;
-var dictionary = ["fight","attack","hit","swing","slash","stab","dodge","look","grab","pick","drop","inventory","wait","help","info","stop","start","play"];
+var dictionary = ["fight","attack","hit","swing","slash","stab","punch","dodge","look","grab","pick","drop","inventory","wait","help","info","stop","start","play"];
 var movementDictionary = ["go","walk","run","travel","head","move","north","northeast","east","southeast","south","southwest","west","northwest","climb","jump"];
 dictionary = dictionary.concat(movementDictionary);
 var basicDictionary = dictionary;
@@ -494,6 +494,9 @@ function handleAction(words) {
         case 'swing':
             parseSwing(words);
         break;
+        case 'punch':
+            parsePunch(words);
+        break;
         case 'dodge':
             parseDodge(words);
         break;
@@ -699,7 +702,7 @@ function parseAttack(words) {
                     previous_verb = "attack";
                     previous_component1 = target.name;
                 } else if (words.length == 3) {
-                    if (words[2] == "with") {
+                    if (words[2] == "with" || words[2] == "using") {
                         words.splice(2,1);
                         parseAttack(words);
                     } else {
@@ -712,8 +715,8 @@ function parseAttack(words) {
                             } else {
                                 outputText("You cannot attack with that!");
                             }
-                        } else if (words[2] == 'fist' || words[2] == 'fists') {
-                            let dummy = new Item("Fist",1);
+                        } else if (words[2] == "fist" || words[2] == "fists" || words[2] == "feet" || words[2] == "foot" || words[2] == "body" || words[2] == "self" || words[2] == "player") {
+                            let dummy = new Item("Body",1);
                             attackEnemy(target,dummy);
                             updateEnemies();
                             
@@ -722,7 +725,7 @@ function parseAttack(words) {
                         }
                     }
                 } else if (words.length > 3) {
-                    if (words[2] == "with") {
+                    if (words[2] == "with" || words[2] == "using") {
                         words.splice(2,1);
                         parseAttack(words);
                     } else {
@@ -746,8 +749,12 @@ function parseSwing(words) {
     if (words.length > 1) {
         let target = null;
         let weapon = null;
-        if (detectComponent(inventory, words[1])) {
-            weapon = findComponent(inventory, words[1]);
+        if (detectComponent(inventory, words[1]) || words[1] == "fist" || words[1] == "fists") {
+            if (words[1] == "fist" || words[1] == "fists") {
+                weapon = new Item("Body",1);
+            } else {
+                weapon = findComponent(inventory, words[1]);
+            }
             if (words.length < 3) {
                 previous_verb = "swing";
                 previous_component1 = weapon.name;
@@ -772,12 +779,24 @@ function parseSwing(words) {
                     outputText("What are you even saying?");
                 }
             }
-        } else {
+        } else{
             outputText("You do not have that!");
         }
     } else {
         outputText("What do you want to swing?");
         previous_verb = "swing";
+    }
+}
+
+function parsePunch(words) {
+    if (words.length == 1) {
+        outputText("What do you want to punch?");
+        previous_verb = "punch";
+    } else if (words.length == 2) {
+        words.push("fist");
+        parseAttack(words);
+    } else {
+        outputText("What are you even saying?");
     }
 }
 

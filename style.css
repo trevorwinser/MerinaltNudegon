@@ -44,7 +44,7 @@ input[type="text"] {
     font-family: 'myFirstFont', sans-serif; /* Fallback to a generic sans-serif font */
 }
 #logo {
-    position: absolute;
+    position: fixed;
     bottom: 10px;
     right: 10px;
 }
