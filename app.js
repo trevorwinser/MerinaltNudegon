@@ -32,18 +32,19 @@ class Room {
     }
 }
 class CustomRoom extends Room {
-    constructor(location) {
+    conditions = [];
+    f;
+    constructor(location, f, conditions) {
         super(location);
+        this.f = f;
+        this.conditions = conditions;
     }
-    customAction(x) {
-        x();
-    }
-    altDescription = "";
-    removeAction(action) {
-        dictionary.pop(dictionary.indexOf(action));
-    }
-    addAction(action) {
-        dictionary.push(action);
+    checkAction(words) {
+        for (let i = 0; i < this.conditions.length; i++) {
+            if (this.conditions[i]) {
+                this.f[i](this);
+            }
+        }
     }
 }
 class Component {
@@ -155,8 +156,8 @@ function initializeRooms() {
     const largeBranch = new Room("Large Branch");
     largeBranch.description = "This branch is sturdy. From here, you can see the entire field from here. Going up might allow you to see further.";
     connectRooms(grandTree, largeBranch, "up", "down");
-    const appleBranch = new CustomRoom("Weak Branch");
-    appleBranch.description = "You can see a kingdom southwest from here.";
+    const appleBranch = new CustomRoom("Small Branch", [removeRoom,() => outputText("Oh no! The branch broke as you grabbed the apple."), () => health--], [() => words[0] === "grab" && words[1] === "apple",true,true]);
+    appleBranch.description = "You can see a kingdom southwest from here. This branch seems weak enough to break from too much movement.";
     connectRooms(largeBranch, appleBranch, "up", "down");
     const apple = new Consumable("Apple", 3);
     apple.description = "A shimmering apple can be seen.";
@@ -268,8 +269,9 @@ function initializeRooms() {
 
     connectRooms(wildField19, lowestoftTrail1,"southwest","northeast");
     connectRooms(lowestoftTrail1, lowestoftTrail2,"southwest","northeast");
-}
 
+    currentRoom = grandTree;
+}
 
 function addComponent(room, component) {
     room.components.push(component);
@@ -304,11 +306,18 @@ function checkSyntax(words) {
     if (checkVerb(verb)) {
         if (!actionsPerformed.includes(verb)) actionsPerformed.push(verb);
         if (movementDictionary.includes(verb)) {
-            if (!enemiesInRoom()) {
-                handleMovement(words);
+            if (handleMovement(words)) {
+                if (currentRoom instanceof CustomRoom) {
+                    currentRoom.checkAction(words);
+                }
             }
         } else {
-            handleAction(words);
+            if (handleAction(words)) {
+                if (currentRoom instanceof CustomRoom) {
+                    currentRoom.checkAction(words);
+                }
+            }
+
         }
     }
 }
@@ -330,56 +339,41 @@ function checkVerb(verb) {
 function handleMovement(words) {
     switch (words[0]) {
         case 'go':
-            parseMove(words);
-        break;
+            return parseMove(words);
         case 'walk':
-            parseMove(words);
-        break;
+            return parseMove(words);
         case 'run':
-            parseMove(words);
-        break;
+            return parseMove(words);
         case 'travel':
-            parseMove(words);
-        break;
+            return parseMove(words);
         case 'head':
-            parseMove(words);
-        break;
+            return parseMove(words);
         case 'move':
-            parseMove(words);
-        break;
+            return parseMove(words);
         case 'north':
-            parseMove(words);
-        break;
+            return parseMove(words);
         case 'northeast':
-            parseMove(words);
-        break;
+            return parseMove(words);
         case 'east':
-            parseMove(words);
-        break;
+            return parseMove(words);
         case 'southeast':
-            parseMove(words);
-        break;
+            return parseMove(words);
         case 'south':
-            parseMove(words);
-        break;
+            return parseMove(words);
         case 'southwest':
-            parseMove(words);
-        break;
+            return parseMove(words);
         case 'west':
-            parseMove(words);
-        break;
+            return parseMove(words);
         case 'northwest':
-            parseMove(words);
-        break;
+            return parseMove(words);
         case 'climb':
-            parseClimb(words);
-        break;
+            return parseClimb(words);
         case 'jump':
-            parseJump(words);
-        break;
+            return parseJump(words);
         default:
             outputText("That's not a valid direction.");    //SHOULD NOT HAPPEN.
     }
+    return false;
 }
 
 function parseMove(words) {
@@ -388,32 +382,55 @@ function parseMove(words) {
             outputText("Which direction do you want to go?");
             previous_verb = "go";
         } else {
-            handleDirection(words[0]);
+            return handleDirection(words[0]);
         }
     } else if (words.length == 2) {
         if (words[0] == "go" || words[0] == "walk" || words[0] == "run" || words[0] == "travel" || words[0] == "head") {
-            handleDirection(words[1]);
+            return handleDirection(words[1]);
         } else {
             outputText("I only understood you as far as " + words[0] + ".");
         }
     }
+    return false;
 }
 
 function parseClimb(words) {
     if (words.length == 1) {
-        handleDirection("up");  //Defaults climb to go up
+        return handleDirection("up");  //Defaults climb to go up
     } else {
         if (words[1] == 'up' || words[1] == 'down') {
             if (words.length > 2) {
                 outputText("I only understood you as far as climb " + words[1] + ".");
             }
             else {
-                handleDirection(words[1]);
+                return handleDirection(words[1]);
             }
         } else {
             outputText("I only understood you as far as climb.");
         }
     } 
+    return false;
+}
+
+function parseJump(words) {
+    if (words.length == 1) {
+        if (handleDirection("down")) {
+            outputText("Wheeeeee!");
+            return true;
+        }
+    } else if (words.length == 2) {
+        if (words[1] == "down") {
+            if (handleDirection("down")) {
+                outputText("Wheeeeee!");
+                return true;
+            }
+        } else {
+            outputText("I only understood you as far as jump.");
+        }
+    } else {
+        outputText("I only understood you as far as jump.");
+    }
+    return false;
 }
 
 function handleDirection(direction) {
@@ -426,7 +443,6 @@ function handleDirection(direction) {
             outputText("You cannot go that direction.");
             return false;
         }
-
 }
 
 function changeRoom(index) {
@@ -504,16 +520,16 @@ function handleAction(words) {
             parseLook(words);
         break;
         case 'grab':
-            parseGrab(words);
+            return parseGrab(words);
         break;
         case 'pick':
-            parseGrab(words);
+            return parseGrab(words);
         break;
         case 'drop':
-            parseDrop(words);
+            return parseDrop(words);
         break;
         case 'wait':
-            parseWait(words);
+            return parseWait(words);
         break;
         case 'inventory':
             parseInventory(words);
@@ -534,6 +550,7 @@ function handleAction(words) {
             parseStart(words);
         break;
     }
+    return false;
 }
 
 function parseGrab(words) {
@@ -561,6 +578,7 @@ function parseGrab(words) {
                     outputText("You picked up the " + words[1] + ".");
                     inventory.push(returnItem(currentRoom.components.splice(currentRoom.components.indexOf(correctComponent),1)));
                     updateEnemies();
+                    return true;
                 } else {
                     outputText("You cannot pick that up.");
                 }
@@ -574,6 +592,7 @@ function parseGrab(words) {
             }
         }
     }
+    return false;
 }
 
 function parseDrop(words) {
@@ -592,6 +611,7 @@ function parseDrop(words) {
             outputText("You dropped the " + correctComponent.name.toLowerCase() + ".");
             currentRoom.components.push(returnItem(inventory.splice(inventory.indexOf(correctComponent),1))); 
             updateEnemies();
+            return true;
         }
     } else {
         if (words.length == 2) {
@@ -603,6 +623,7 @@ function parseDrop(words) {
             outputText("What do you want to drop?");
         }
     }
+    return false;
 }
  
 function parseLook(words) {
@@ -619,24 +640,6 @@ function parseLook(words) {
         for (let component of currentRoom.components) {
             outputText(component.description);
         }
-    }
-}
-
-function parseJump(words) {
-    if (words.length == 1) {
-        if (handleDirection("down")) {
-            outputText("Wheeeeee!");
-        }
-    } else if (words.length == 2) {
-        if (words[1] == "down") {
-            if (handleDirection("down")) {
-                outputText("Wheeeeee!");
-            }
-        } else {
-            outputText("I only understood you as far as jump.");
-        }
-    } else {
-        outputText("I only understood you as far as jump.");
     }
 }
 
@@ -962,6 +965,20 @@ function connectRooms(x, y, xdir, ydir) {
     y.directions.push(ydir)
 }
 
+function removeRoom(doorRoom) {
+    const room1 = doorRoom.connectedRooms[0];
+    const room2 = doorRoom.connectedRooms[1];
+    if (room2 !== undefined) {
+        room1.connectedRooms[room1.connectedRooms.indexOf(doorRoom)] = room2;
+        room2.connectedRooms[room2.connectedRooms.indexOf(doorRoom)] = room1;
+        changeRoom(1);
+    } else {
+        room1.connectedRooms.splice(room1.connectedRooms.indexOf(doorRoom),1);
+        room1.directions.splice(room1.connectedRooms.indexOf(doorRoom),1);
+        changeRoom(0);
+    }
+}
+
 function outputText(txt) {
     const p = document.createElement("p");
     p.innerHTML = txt;
@@ -996,7 +1013,7 @@ window.onload = (event) => {
         outputText(component.description);
     }
     currentRoom.entered = true;
-    document.addEventListener('click', handleMusic);
+    // document.addEventListener('click', handleMusic);
 }
 
 const terminalOutput = document.getElementById("terminal-output");
