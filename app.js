@@ -291,8 +291,6 @@ function initializeRooms() {
     townGate1.description = "The gate entrance, adorned with intricate wrought-iron designs, opens to reveal a captivating view of a bustling town square is visible to the southeast.";
 
     connectRooms(lowestoftTrail2, townGate1, "southeast", "northwest");
-
-    currentRoom = appleBranch;
 }
 
 function addComponent(room, component) {
@@ -1092,7 +1090,7 @@ window.onload = (event) => {
         outputText(component.description);
     }
     currentRoom.entered = true;
-    // document.addEventListener('click', handleMusic);
+    document.addEventListener('click', handleMusic);
 }
 
 const terminalOutput = document.getElementById("terminal-output");
