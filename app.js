@@ -4,7 +4,7 @@ var inventory = [];
 var previous_verb = null;
 var previous_component1 = null;
 var previous_component2 = null;
-var dictionary = ["fight","attack","hit","swing","slash","stab","punch","dodge","look","grab","pick","drop","inventory","wait","help","info","stop","start","play"];
+var dictionary = ["fight","attack","hit","swing","slash","stab","punch","dodge","look","grab","pick","drop","inventory","wait","help","info","stop","start","play","eat","drink","consume"];
 var movementDictionary = ["go","walk","run","travel","head","move","north","northeast","east","southeast","south","southwest","west","northwest","climb","jump"];
 dictionary = dictionary.concat(movementDictionary);
 var basicDictionary = dictionary;
@@ -61,6 +61,7 @@ class Enemy extends Component {
     attackTime = 9999999;
     turnsInteracted = 0;
     dialogue;
+    escapable = true;
     constructor(name, health, defense, strength, attackTime) {
         super(name);
         this.health = health;
@@ -99,9 +100,10 @@ class CustomItem extends Item {
 }
 class Consumable extends Component {
     health = 0;
+    type = "eat";
     constructor(name, health) {
         super(name);
-        this;health = health;
+        this.health = health;
     }
 }
 
@@ -123,7 +125,8 @@ function initializeRooms() {
     connectRooms(beginnerFork, starterRoad1, "west", "east");
 
     const goblin = new Enemy("Goblin", 10, 0, 2, 3);
-    goblin.description = "A goblin stands in your way."
+    goblin.description = "A goblin stands in your way.";
+    goblin.escapable = false;
     addComponent(beginnerFork,goblin);
 
     //Not a custom room, because once the user types "open door" with a key, the room is obsolete.
@@ -138,13 +141,13 @@ function initializeRooms() {
     const wildField1 = new Room("Wild Fields");
     const wildField2 = new Room("Wild Fields");
     const wildField3 = new Room("Wild Fields");
-    wildField3.description = "A trail that leads towards the mountains is northeast from here."
+    wildField3.description = "A trail that leads towards the mountains is northeast from here.";
     const wildField4 = new Room("Wild Fields");
     const wildField5 = new Room("Wild Fields");
     wildField5.description = "This vast meadow goes on for a while. It may be hard to know where you're going from here, so mapping it out might help.";
     const wildField6 = new Room("Wild Fields");
     const wildField7 = new Room("Wild Fields");
-    wildField7.description = "The field spreads far in every direction."
+    wildField7.description = "The field spreads far in every direction.";
     const wildField8 = new Room("Wild Fields");
     const wildField9 = new Room("Wild Fields");
     const wildField10 = new Room("Wild Fields");
@@ -158,7 +161,7 @@ function initializeRooms() {
     connectRooms(grandTree, largeBranch, "up", "down");
 
     //Literal psychopath coding.
-    const appleBranch = new CustomRoom("Small Branch", [removeRoom,() => outputText("Oh no! The branch broke as you grabbed the apple."), () => health--], [() => words[0] === "grab" && words[1] === "apple",true,true]);
+    const appleBranch = new CustomRoom("Small Branch", [() => outputText("Oh no! The branch broke as you grabbed the apple. You also were a little hurt by the fall."), removeRoom, () => health--], [() => words[0] === "grab" && words[1] === "apple",() => conditions[0], () => conditions[0]]);
     appleBranch.description = "You can see a kingdom southwest from here. This branch seems weak enough to break from too much movement.";
     connectRooms(largeBranch, appleBranch, "up", "down");
 
@@ -174,11 +177,12 @@ function initializeRooms() {
 
     const wildField18 = new CustomRoom("Wild Fields");
     const TMK = new CustomEnemy(["Knight","Armor"], 10, 5, 5, 2);
-    TMK.description = "A knight with seemingly no one inside stands tall and still here."
+    TMK.description = "A knight with seemingly no one inside stands tall and still here.";
     wildField18.components.push(TMK);
     
     const wildField19 = new Room("Wild Fields");
     const wildField20 = new Room("Wild Fields");
+    const wildField21 = new Room("Wild Fields");
 
     const beach1 = new Room("Beach");
     beach1.description = "This coast consists of various shells and colorful rocks.";
@@ -188,91 +192,107 @@ function initializeRooms() {
     const beach5 = new Room("Beach");
     const beach6 = new Room("Beach");
 
-    connectRooms(starterRoad2, wildField5, "east", "west");
-    connectRooms(wildField1, wildField2, "east", "west");
-    connectRooms(wildField2, wildField3, "east", "west");
-    connectRooms(wildField3, wildField4, "east", "west");
-    connectRooms(wildField5, wildField6, "east", "west");
-    connectRooms(wildField6, wildField7, "east", "west");
-    connectRooms(wildField7, wildField8, "east", "west");
-    connectRooms(wildField8, wildField9, "east", "west");
-    connectRooms(wildField9, wildField10, "east", "west");
-    connectRooms(wildField10, beach1, "east", "west");
-    connectRooms(wildField11, wildField12, "east", "west");
-    connectRooms(wildField12, grandTree, "east", "west");
-    connectRooms(grandTree, wildField13, "east", "west");
-    connectRooms(wildField13, wildField14, "east", "west");
-    connectRooms(wildField14, beach2, "east", "west");
-    connectRooms(wildField15, wildField16, "east", "west");
-    connectRooms(wildField16, wildField17, "east", "west");
-    connectRooms(wildField17, wildField18, "east", "west");
-    connectRooms(wildField18, beach3, "east", "west");
-    connectRooms(wildField19, wildField20, "east", "west");
-    connectRooms(wildField20, beach4, "east", "west");
-    connectRooms(beach5, beach6, "east", "west");
-
-    connectRooms(wildField1, wildField6, "south", "north");
-    connectRooms(wildField2, wildField7, "south", "north");
-    connectRooms(wildField3, wildField8, "south", "north");
-    connectRooms(wildField4, wildField9, "south", "north");
-    connectRooms(wildField6, wildField11, "south", "north");
-    connectRooms(wildField7, wildField12, "south", "north");
-    connectRooms(wildField8, grandTree, "south", "north");
-    connectRooms(wildField9, wildField13, "south", "north");
-    connectRooms(wildField10, wildField14, "south", "north");
-    connectRooms(beach1, beach2, "south", "north");
-    connectRooms(wildField11, wildField15, "south", "north");
-    connectRooms(wildField12, wildField16, "south", "north");
-    connectRooms(grandTree, wildField17, "south", "north");
-    connectRooms(wildField13, wildField18, "south", "north");
-    connectRooms(wildField14, beach3, "south", "north");
-    connectRooms(wildField16, wildField19, "south", "north");
-    connectRooms(wildField17, wildField20, "south", "north");
-    connectRooms(wildField18, beach4, "south", "north");
-    connectRooms(wildField19, beach5, "south", "north");
-    connectRooms(wildField20, beach6, "south", "north");
-
-    connectRooms(wildField5, wildField1, "northeast", "southwest");
-    connectRooms(wildField6, wildField2, "northeast", "southwest");
-    connectRooms(wildField7, wildField3, "northeast", "southwest");
-    connectRooms(wildField8, wildField4, "northeast", "southwest");
-    connectRooms(wildField11, wildField7, "northeast", "southwest");
-    connectRooms(wildField12, wildField8, "northeast", "southwest");
-    connectRooms(grandTree, wildField9, "northeast", "southwest");
-    connectRooms(wildField13, wildField10, "northeast", "southwest");
-    connectRooms(wildField14, beach1, "northeast", "southwest");
-    connectRooms(beach3, beach2, "northeast", "southwest");
-    connectRooms(beach4, beach3, "northeast", "southwest");
-    connectRooms(beach5, wildField20, "northeast", "southwest");
-    connectRooms(beach6, beach4, "northeast", "southwest");
-
-    connectRooms(wildField1, wildField7, "southeast", "northwest");
-    connectRooms(wildField2, wildField8, "southeast", "northwest");
-    connectRooms(wildField3, wildField9, "southeast", "northwest");
-    connectRooms(wildField4, wildField10, "southeast", "northwest");
-    connectRooms(wildField5, wildField11, "southeast", "northwest");
-    connectRooms(wildField6, wildField12, "southeast", "northwest");
-    connectRooms(wildField7, grandTree, "southeast", "northwest");
-    connectRooms(wildField8, wildField13, "southeast", "northwest");
-    connectRooms(wildField9, wildField14, "southeast", "northwest");
-    connectRooms(wildField10, beach2, "southeast", "northwest");
-    connectRooms(wildField11, wildField16, "southeast", "northwest");
-    connectRooms(wildField12, wildField17, "southeast", "northwest");
-    connectRooms(grandTree, wildField18, "southeast", "northwest");
-    connectRooms(wildField13, beach3, "southeast", "northwest");
-    connectRooms(wildField15, wildField19, "southeast", "northwest");
-    connectRooms(wildField16, wildField20, "southeast", "northwest");
-    connectRooms(wildField17, beach4, "southeast", "northwest");
-    connectRooms(wildField19, beach6, "southeast", "northwest");
-
-    //A seaside kingdom troubled by the lands
     const lowestoftTrail1 = new Room("Lowestoft Trail");
-    lowestoftTrail1.description = "The Lowestoft Kingdom spans southwest from here. To the northeast is a vast field.";
+    lowestoftTrail1.description = "A trail towards the Lowestoft Kingdom spans southwest from here. To the northeast is a vast field.";
     const lowestoftTrail2 = new Room("Lowestoft Trail");
+    lowestoftTrail2.description = "The Lowestoft Kingdom can be seen directly south from here.";
 
-    connectRooms(wildField19, lowestoftTrail1,"southwest","northeast");
-    connectRooms(lowestoftTrail1, lowestoftTrail2,"southwest","northeast");
+    connectRooms(wildField1,wildField2,"east","west");
+    connectRooms(wildField2,wildField3,"east","west");
+    connectRooms(wildField3,wildField4,"east","west");
+    connectRooms(starterRoad2,wildField5,"east","west");
+    connectRooms(wildField5,wildField6,"east","west");
+    connectRooms(wildField6,wildField7,"east","west");
+    connectRooms(wildField7,wildField8,"east","west");
+    connectRooms(wildField8,wildField9,"east","west");
+    connectRooms(wildField9,wildField10,"east","west");
+    connectRooms(wildField10,beach1,"east","west");
+    connectRooms(wildField11,wildField12,"east","west");
+    connectRooms(wildField12,grandTree,"east","west");
+    connectRooms(grandTree,wildField13,"east","west");
+    connectRooms(wildField13,wildField14,"east","west");
+    connectRooms(wildField14,beach2,"east","west");
+    connectRooms(wildField15,wildField16,"east","west");
+    connectRooms(wildField16,wildField17,"east","west");
+    connectRooms(wildField17,wildField18,"east","west");
+    connectRooms(wildField18,beach3,"east","west");
+    connectRooms(wildField19,wildField20,"east","west");
+    connectRooms(wildField20,wildField21,"east","west");
+    connectRooms(wildField21,beach4,"east","west");
+    connectRooms(lowestoftTrail1,beach5,"east","west");
+    connectRooms(beach5,beach6,"east","west");
 
+    connectRooms(wildField1,wildField6,"south","north");
+    connectRooms(wildField2,wildField7,"south","north");
+    connectRooms(wildField3,wildField8,"south","north");
+    connectRooms(wildField4,wildField9,"south","north");
+    connectRooms(wildField6,wildField11,"south","north");
+    connectRooms(wildField7,wildField12,"south","north");
+    connectRooms(wildField8,grandTree,"south","north");
+    connectRooms(wildField9,wildField13,"south","north");
+    connectRooms(wildField10,wildField14,"south","north");
+    connectRooms(beach1,beach2,"south","north");
+    connectRooms(wildField11,wildField15,"south","north");
+    connectRooms(wildField12,wildField16,"south","north");
+    connectRooms(grandTree,wildField17,"south","north");
+    connectRooms(wildField13,wildField18,"south","north");
+    connectRooms(wildField14,beach3,"south","north");
+    connectRooms(wildField15,wildField19,"south","north");
+    connectRooms(wildField16,wildField20,"south","north");
+    connectRooms(wildField17,wildField21,"south","north");
+    connectRooms(wildField18,beach4,"south","north");
+    connectRooms(wildField19,lowestoftTrail1,"south","north");
+    connectRooms(wildField20,beach5,"south","north");
+    connectRooms(wildField21,beach6,"south","north");
+
+    connectRooms(wildField1,wildField5,"southwest","northeast");
+    connectRooms(wildField2,wildField6,"southwest","northeast");
+    connectRooms(wildField3,wildField7,"southwest","northeast");
+    connectRooms(wildField4,wildField8,"southwest","northeast");
+    connectRooms(wildField7,wildField11,"southwest","northeast");
+    connectRooms(wildField8,wildField12,"southwest","northeast");
+    connectRooms(wildField9,grandTree,"southwest","northeast");
+    connectRooms(wildField10,wildField13,"southwest","northeast");
+    connectRooms(beach1,wildField14,"southwest","northeast");
+    connectRooms(wildField12,wildField15,"southwest","northeast");
+    connectRooms(grandTree,wildField16,"southwest","northeast");
+    connectRooms(wildField13,wildField17,"southwest","northeast");
+    connectRooms(wildField14,wildField18,"southwest","northeast");
+    connectRooms(beach2,beach3,"southwest","northeast");
+    connectRooms(wildField16,wildField19,"southwest","northeast");
+    connectRooms(wildField17,wildField20,"southwest","northeast");
+    connectRooms(wildField18,wildField21,"southwest","northeast");
+    connectRooms(wildField20,lowestoftTrail1,"southwest","northeast");
+    connectRooms(wildField21,beach5,"southwest","northeast");
+    connectRooms(beach4,beach6,"southwest","northeast");
+    connectRooms(lowestoftTrail1,lowestoftTrail2,"southwest","northeast");
+
+    connectRooms(wildField1,wildField7,"southeast","northwest");
+    connectRooms(wildField2,wildField8,"southeast","northwest");
+    connectRooms(wildField3,wildField9,"southeast","northwest");
+    connectRooms(wildField4,wildField10,"southeast","northwest");
+    connectRooms(wildField5,wildField11,"southeast","northwest");
+    connectRooms(wildField6,wildField12,"southeast","northwest");
+    connectRooms(wildField7,grandTree,"southeast","northwest");
+    connectRooms(wildField8,wildField13,"southeast","northwest");
+    connectRooms(wildField9,wildField14,"southeast","northwest");
+    connectRooms(wildField10,beach2,"southeast","northwest");
+    connectRooms(wildField11,wildField16,"southeast","northwest");
+    connectRooms(wildField12,wildField17,"southeast","northwest");
+    connectRooms(grandTree,wildField18,"southeast","northwest");
+    connectRooms(wildField13,beach3,"southeast","northwest");
+    connectRooms(wildField15,wildField20,"southeast","northwest");
+    connectRooms(wildField16,wildField21,"southeast","northwest");
+    connectRooms(wildField17,beach4,"southeast","northwest");
+    connectRooms(wildField19,beach5,"southeast","northwest");
+    connectRooms(wildField20,beach6,"southeast","northwest");
+
+    const townGate1 = new Room("Gate Entrance");
+    townGate1.description = "The gate entrance, adorned with intricate wrought-iron designs, opens to reveal a captivating view of a bustling town square is visible to the southeast.";
+
+    connectRooms(lowestoftTrail2, townGate1, "southeast", "northwest");
+
+    currentRoom = appleBranch;
 }
 
 function addComponent(room, component) {
@@ -308,9 +328,11 @@ function checkSyntax(words) {
     if (checkVerb(verb)) {
         if (!actionsPerformed.includes(verb)) actionsPerformed.push(verb);
         if (movementDictionary.includes(verb)) {
-            if (handleMovement(words)) {
-                if (currentRoom instanceof CustomRoom) {
-                    currentRoom.checkAction(words);
+            if (roomEscapable()) {
+                if (handleMovement(words)) {
+                    if (currentRoom instanceof CustomRoom) {
+                        currentRoom.checkAction(words);
+                    }
                 }
             }
         } else {
@@ -380,14 +402,14 @@ function handleMovement(words) {
 
 function parseMove(words) {
     if (words.length == 1) {
-        if (words[0] == "go" || words[0] == "walk" || words[0] == "run" || words[0] == "travel" || words[0] == "head") {
+        if (words[0] == "go" || words[0] == "walk" || words[0] == "run" || words[0] == "travel" || words[0] == "head" || words[0] == "move") {
             outputText("Which direction do you want to go?");
             previous_verb = "go";
         } else {
             return handleDirection(words[0]);
         }
     } else if (words.length == 2) {
-        if (words[0] == "go" || words[0] == "walk" || words[0] == "run" || words[0] == "travel" || words[0] == "head") {
+        if (words[0] == "go" || words[0] == "walk" || words[0] == "run" || words[0] == "travel" || words[0] == "head" || words[0] == "move") {
             return handleDirection(words[1]);
         } else {
             outputText("I only understood you as far as " + words[0] + ".");
@@ -449,6 +471,7 @@ function handleDirection(direction) {
 
 function changeRoom(index) {
     currentRoom = currentRoom.connectedRooms[index];
+    outputText(" ");
     outputText(currentRoom.location);
     if (!currentRoom.entered) {
         outputText(currentRoom.description);
@@ -460,14 +483,16 @@ function changeRoom(index) {
     topRightElement.textContent = currentRoom.location;
 }
 
-function enemiesInRoom() {
+function roomEscapable() {
     for (let component of currentRoom.components) {
         if (component instanceof Enemy || component instanceof CustomEnemy) {
-            outputText("You cannot do that right now!");
-            return true;
+            if (!component.escapable) {
+                outputText("You cannot run away!");
+                return false;
+            }
         }
     }
-    return false;
+    return true;
 }
 
 function updateEnemies() {
@@ -523,16 +548,12 @@ function handleAction(words) {
         break;
         case 'grab':
             return parseGrab(words);
-        break;
         case 'pick':
             return parseGrab(words);
-        break;
         case 'drop':
             return parseDrop(words);
-        break;
         case 'wait':
             return parseWait(words);
-        break;
         case 'inventory':
             parseInventory(words);
         break;
@@ -550,6 +571,15 @@ function handleAction(words) {
         break;
         case 'play':
             parseStart(words);
+        break;
+        case 'eat':
+            parseConsume(words);
+        break;
+        case 'consume':
+            parseConsume(words);
+        break;
+        case 'drink':
+            parseConsume(words);
         break;
     }
     return false;
@@ -598,15 +628,8 @@ function parseGrab(words) {
 }
 
 function parseDrop(words) {
-    let drop = false;
-    let correctComponent = null;
-    inventory.forEach(component => {
-        if (component.name.toLowerCase() == words[1]) {
-            correctComponent = component;
-            drop = true;
-        }
-    });
-    if (drop) {
+    let correctComponent = searchInventory(words[1]);
+    if (correctComponent != null) {
         if (words.length > 2) {
             outputText("I only understood you as far as drop " + correctComponent.name.toLowerCase() + ".")
         } else {                 //Successful command
@@ -887,6 +910,60 @@ function parseStart(words) {
     }
 }
 
+function parseConsume(words) {
+    if (words.length == 1) {
+        outputText("What do you want to consume?");
+        previous_verb = "consume";
+    } else {
+        let item = searchInventory(words[1]);
+        console.log(item);
+        if (item != null) {
+            if (item instanceof Consumable) {
+                if (item.type == "eat") {
+                    if (words[0] == "drink") {
+                        outputText("You cannot drink that!");
+                    } else {
+                        if (words.length > 2) {
+                            outputText("I only understood you as far as " + words[0] + " " + words[1] + ".");
+                        } else {
+                            consume(item);
+                        }
+                    }
+                } else {
+                    if (words[0] == "eat") {
+                        outputText("You cannot eat that!");
+                    } else {
+                        if (words.length > 2) {
+                            outputText("I only understood you as far as " + words[0] + " " + words[1] + ".");
+                        } else {
+                            consume(item);
+                        }
+                    }
+                }
+            } else {
+                outputText("You cannot consume that!");
+            }
+        } else {
+            outputText("You do not have that!");
+        }
+    }
+}
+
+function searchInventory(itemName) {
+    return inventory.find(component => component.name.toLowerCase() === itemName) || null;
+}
+
+function consume(item) {
+    health += item.health;
+    inventory.splice(inventory.indexOf(item),1);
+    outputText("You successfully consumed the " + item.name.toLowerCase() + ".");
+    if (item.health > 0) {
+        outputText("It had a positive effect on your health!");
+    } else if (item.health < 0) {
+        outputText("It had a negative effect on your health!");
+    }
+}
+
 function attackEnemy(enemy, weapon) {
     if (weapon.damage > enemy.defense) {
         enemy.health = enemy.health + (enemy.defense - weapon.damage);
@@ -1015,7 +1092,7 @@ window.onload = (event) => {
         outputText(component.description);
     }
     currentRoom.entered = true;
-    document.addEventListener('click', handleMusic);
+    // document.addEventListener('click', handleMusic);
 }
 
 const terminalOutput = document.getElementById("terminal-output");
