@@ -4,12 +4,13 @@ var inventory = [];
 var previous_verb = null;
 var previous_component1 = null;
 var previous_component2 = null;
-var dictionary = ["fight","attack","hit","swing","slash","stab","punch","dodge","look","grab","pick","drop","inventory","wait","help","info","stop","start","play","eat","drink","consume"];
+var dictionary = ["fight","attack","hit","swing","slash","stab","punch","dodge","look","grab","pick","drop","inventory","wait","help","info","stop","start","play","eat","drink","consume","block"];
 var movementDictionary = ["go","walk","run","travel","head","move","north","northeast","east","southeast","south","southwest","west","northwest","climb","jump"];
 dictionary = dictionary.concat(movementDictionary);
 var basicDictionary = dictionary;
 var health = 10;
 var defense = 1;
+var block = 0;
 var luck = 1;
 var dodge = false;
 var dodgeCooldown = 0;
@@ -17,7 +18,8 @@ var actionsPerformed = [];
 var playlist = ["audio/BeginnerArea.mp3","audio/Enemy_Defeated.mp3","audio/Kingdom.mp3","audio/Boss.mp3"];
 var playlistIndex = 0;
 var audio = null;
-let musicPlayed = false;
+var musicPlayed = false;
+
 
 class Room {
     location;
@@ -124,7 +126,7 @@ function initializeRooms() {
     beginnerFork.description = "A fork in the road has two trails. One heads northeast, and the other heads east.";
     connectRooms(beginnerFork, starterRoad1, "west", "east");
 
-    const goblin = new Enemy("Goblin", 10, 0, 2, 3);
+    const goblin = new Enemy("Goblin", 10, 0, 4, 3);
     goblin.description = "A goblin stands in your way.";
     goblin.escapable = false;
     addComponent(beginnerFork,goblin);
@@ -290,7 +292,7 @@ function initializeRooms() {
     const townGate1 = new Room("Gate Entrance");
     townGate1.description = "The gate entrance, adorned with intricate wrought-iron designs, opens to reveal a captivating view of a bustling town square is visible to the southeast.";
 
-    connectRooms(lowestoftTrail2, townGate1, "southeast", "northwest");
+    connectRooms(lowestoftTrail2, townGate1, "south", "north");
 }
 
 function addComponent(room, component) {
@@ -483,7 +485,7 @@ function changeRoom(index) {
 
 function roomEscapable() {
     for (let component of currentRoom.components) {
-        if (component instanceof Enemy || component instanceof CustomEnemy) {
+        if (component instanceof Enemy) {
             if (!component.escapable) {
                 outputText("You cannot run away!");
                 return false;
@@ -495,7 +497,7 @@ function roomEscapable() {
 
 function updateEnemies() {
     for (let enemy of currentRoom.components) {
-        if (enemy instanceof Enemy || enemy instanceof CustomEnemy) {
+        if (enemy instanceof Enemy) {
             enemy.turnsInteracted++;
             // console.log("Attack Time:" + enemy.attackTime);
             // console.log("Turns Interacted: " + enemy.turnsInteracted);
@@ -571,13 +573,13 @@ function handleAction(words) {
             parseStart(words);
         break;
         case 'eat':
-            parseConsume(words);
-        break;
+            return parseConsume(words);
         case 'consume':
-            parseConsume(words);
-        break;
+            return parseConsume(words);
         case 'drink':
-            parseConsume(words);
+            return parseConsume(words);
+        case 'block':
+            parseBlock(words);
         break;
     }
     return false;
@@ -722,7 +724,7 @@ function parseAttack(words) {
         let weapon = null;
         if (detectComponent(currentRoom.components,words[1])) {
             target = findComponent(currentRoom.components, words[1]);
-            if (target instanceof Enemy || target instanceof CustomEnemy) {
+            if (target instanceof Enemy) {
                 if (words.length < 3) {
                     outputText("What do you want to attack the " + target.name.toLowerCase() + " with?");
                     previous_verb = "attack";
@@ -790,7 +792,7 @@ function parseSwing(words) {
                     target = findComponent(currentRoom.components, words[2]);
                     if (target instanceof Enemy || target instanceof CustomEnemy) {
                         attackEnemy(target, weapon);
-                        updateEnemy();
+                        updateEnemies();
                     } else {
                         outputText("You cannot attack that.");
                     }
@@ -913,28 +915,30 @@ function parseConsume(words) {
         outputText("What do you want to consume?");
         previous_verb = "consume";
     } else {
-        let item = searchInventory(words[1]);
+        let food = searchInventory(words[1]);
         console.log(item);
-        if (item != null) {
-            if (item instanceof Consumable) {
-                if (item.type == "eat") {
+        if (food != null) {
+            if (food instanceof Consumable) {
+                if (food.type == "eat") {
                     if (words[0] == "drink") {
-                        outputText("You cannot drink that!");
+                        outputText("You cannot drink that.");
                     } else {
                         if (words.length > 2) {
                             outputText("I only understood you as far as " + words[0] + " " + words[1] + ".");
                         } else {
-                            consume(item);
+                            updateEnemies();
+                            return consume(food);
                         }
                     }
                 } else {
                     if (words[0] == "eat") {
-                        outputText("You cannot eat that!");
+                        outputText("You cannot eat that.");
                     } else {
                         if (words.length > 2) {
                             outputText("I only understood you as far as " + words[0] + " " + words[1] + ".");
                         } else {
-                            consume(item);
+                            updateEnemies();
+                            return consume(food);
                         }
                     }
                 }
@@ -945,7 +949,43 @@ function parseConsume(words) {
             outputText("You do not have that!");
         }
     }
+    return false;
 }
+
+function parseBlock(words) {
+    if (!hasEnemies()) {
+        if (words.length == 1) {
+            outputText("What do you want to block with?");
+            previous_verb = "block";
+        } else if (words.length == 2) {
+            let item = searchInventory(words[1]);
+            if (item != null) {
+                if (item instanceof Item) {
+                    block = item.damage;
+                    updateEnemies();
+                    return true;
+                } else {
+                    outputText("You cannot block with that.");
+                }
+            } else {
+                outputText("You do not have that!");
+            }
+        } else {
+            if (words[1] == "with") {
+                words.splice(1,1);
+                parseBlock(words);
+            } else {
+                outputText("I only understood you as far as block.");
+            }
+        }
+    } else {
+        outputText("There are no enemies to block!");
+    }
+}
+
+function hasEnemies() {
+    return currentRoom.components.some(component => component instanceof Enemy);
+  }
 
 function searchInventory(itemName) {
     return inventory.find(component => component.name.toLowerCase() === itemName) || null;
@@ -960,6 +1000,7 @@ function consume(item) {
     } else if (item.health < 0) {
         outputText("It had a negative effect on your health!");
     }
+    return true;
 }
 
 function attackEnemy(enemy, weapon) {
@@ -978,17 +1019,30 @@ function attackEnemy(enemy, weapon) {
 
 function attackPlayer(enemy) {
     if (!dodge) {
-        if (enemy.strength > defense) { 
-            health = health + (defense - enemy.strength);
-            outputText("The " + enemy.name.toLowerCase() + " attacked you!");
-            if (health <= 0) {
-                outputText("You died. Game over.");
-                var input = document.getElementById("terminal-input");
-                if (input) {
-                    input.remove();
-                } else {
-                    console.log("Element not found.");
+        outputText("The " + enemy.name.toLowerCase() + " attacked you!");
+        if (block > 0) {
+            if (enemy.strength > block) {
+                if (enemy.strength > defense) {
+                    health = health + (defense - enemy.strength);
                 }
+            } else {
+                outputText("The block was successful.");
+            }
+            block = 0;
+        } else {
+            if (enemy.strength > defense) {
+                health = health + (defense - enemy.strength);
+            } else {
+                outputText("It had no effect.");
+            }
+        }
+        if (health <= 0) {
+            outputText("You died. Game over.");
+            var input = document.getElementById("terminal-input");
+            if (input) {
+                input.remove();
+            } else {
+                console.log("Element not found.");
             }
         }
     } else {
