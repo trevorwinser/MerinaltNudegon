@@ -1022,9 +1022,8 @@ function attackPlayer(enemy) {
         outputText("The " + enemy.name.toLowerCase() + " attacked you!");
         if (block > 0) {
             if (enemy.strength > block) {
-                if (enemy.strength > defense) {
-                    health = health + (defense - enemy.strength);
-                }
+                health -= enemy.strength;
+                outputText("The block was ineffective, causing more damage.");
             } else {
                 outputText("The block was successful.");
             }
