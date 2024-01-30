@@ -50,10 +50,16 @@ class CustomRoom extends Room {
     }
 }
 class Component {
-    name;
+    name = null;
+    names = [];
     description;
-    constructor(name) {
-        this.name = name;
+    constructor(names) {
+        this.names = names;
+        if (typeof names === 'string') {
+            this.name = names;
+        } else {
+            this.name = names[0];
+        }
     }
 }
 class Enemy extends Component {
@@ -64,48 +70,46 @@ class Enemy extends Component {
     turnsInteracted = 0;
     dialogue;
     escapable = true;
-    constructor(name, health, defense, strength, attackTime) {
-        super(name);
+    constructor(names, health, defense, strength, attackTime) {
+        super(names);
         this.health = health;
         this.defense = defense;
         this.strength = strength;
         this.attackTime = attackTime;
     }  
 }
-class CustomEnemy extends Enemy {
-    names = [];
-    constructor(names, health, defense, strength, attackTime) {
-        super(names[0], health, defense, strength, attackTime);
-        this.names = names;
-    }
-}
 class NPC extends Component {
     dialogue = [];
-    constructor(name, dialogue) {
-        super(name);
+    constructor(names, dialogue) {
+        super(names);
         this.dialogue = dialogue;
     }
 }
 class Item extends Component {
-    damage = 0;
-    constructor(name, damage) {
-        super(name);
-        this.damage = damage;
+    constructor(names) {
+        super(names);
     }
 }
 class CustomItem extends Item {
-    names = [];
-    constructor(names, damage) {
-        super(names[0], damage);
-        this.names = names;
+    id = null;
+    constructor(names, id) {
+        super(names);
+        this.id = id;
     }
 }
-class Consumable extends Component {
+class Consumable extends Item {
     health = 0;
     type = "eat";
-    constructor(name, health) {
-        super(name);
+    constructor(names, health) {
+        super(names);
         this.health = health;
+    }
+}
+class Weapon extends Item {
+    damage = 0;
+    constructor(names, damage) {
+        super(names)
+        this.damage = damage;
     }
 }
 
@@ -114,9 +118,14 @@ function initializeRooms() {
     starterRoad1.description = "The road to the east looks promising, but there's nothing to the west.";
     currentRoom = starterRoad1;
 
-    const sword = new Item("Sword", 3);
+    const sword = new Weapon("Sword", 3);
     sword.description = "A steel sword lays on the ground here."
     addComponent(currentRoom, sword);
+
+    const goblin = new Enemy("Goblin", 10, 0, 4, 3);
+    goblin.description = "A goblin stands in your way.";
+    goblin.escapable = false;
+    addComponent(currentRoom,goblin);
 
     const nothing = new Room("Nothing");
     nothing.description = "You see nothing beyond this point. You should probably head back.";
@@ -126,12 +135,6 @@ function initializeRooms() {
     beginnerFork.description = "A fork in the road has two trails. One heads northeast, and the other heads east.";
     connectRooms(beginnerFork, starterRoad1, "west", "east");
 
-    const goblin = new Enemy("Goblin", 10, 0, 4, 3);
-    goblin.description = "A goblin stands in your way.";
-    goblin.escapable = false;
-    addComponent(beginnerFork,goblin);
-
-    //Not a custom room, because once the user types "open door" with a key, the room is obsolete.
     const goblinDoor = new Room("Mysterious Door");
     goblinDoor.description = "A big wooden door that seems to be locked.";
     connectRooms(beginnerFork, goblinDoor, "northeast", "southwest");
@@ -163,7 +166,7 @@ function initializeRooms() {
     connectRooms(grandTree, largeBranch, "up", "down");
 
     //Literal psychopath coding.
-    const appleBranch = new CustomRoom("Small Branch", [() => outputText("Oh no! The branch broke as you grabbed the apple. You also were a little hurt by the fall."), removeRoom, () => health--], [() => words[0] === "grab" && words[1] === "apple",() => conditions[0], () => conditions[0]]);
+    const appleBranch = new CustomRoom("Small Branch", [() => outputText("Oh no! The branch broke as you grabbed the apple. You also were a little hurt by the fall."), removeRoom, () => health--], [() => words[0] === "grab" || words[0] === "pick", () => conditions[0], () => conditions[0]]);
     appleBranch.description = "You can see a kingdom southwest from here. This branch seems weak enough to break from too much movement.";
     connectRooms(largeBranch, appleBranch, "up", "down");
 
@@ -178,7 +181,7 @@ function initializeRooms() {
     const wildField17 = new Room("Wild Fields");
 
     const wildField18 = new CustomRoom("Wild Fields");
-    const TMK = new CustomEnemy(["Knight","Armor"], 10, 5, 5, 2);
+    const TMK = new Enemy(["Knight","Armor"], 10, 5, 5, 2);
     TMK.description = "A knight with seemingly no one inside stands tall and still here.";
     wildField18.components.push(TMK);
     
@@ -299,6 +302,7 @@ function addComponent(room, component) {
     room.components.push(component);
 }
 
+//Specific case when attempting to add elements of a list of size 1 to another list.
 function returnItem(list) {
     return list[0];
 }
@@ -502,7 +506,7 @@ function updateEnemies() {
             // console.log("Attack Time:" + enemy.attackTime);
             // console.log("Turns Interacted: " + enemy.turnsInteracted);
             if (enemy.attackTime - enemy.turnsInteracted == 1) {
-                outputText("The " + enemy.name.toLowerCase() + " is preparing its attack.");
+                outputText("The " + getName(enemy) + " is preparing its attack.");
             }
             if (enemy.turnsInteracted >= enemy.attackTime && enemy.attackTime != -1) {   //-1 represents an enemy that does not attack. Too lazy to do a different way for now.
                 attackPlayer(enemy);
@@ -593,20 +597,13 @@ function parseGrab(words) {
         words.splice(2,2);
         parseGrab(words);
     } else {
-        let grab = false;
-        let correctComponent = null;
-        currentRoom.components.forEach(component => {
-            if (component.name.toLowerCase() == words[1]) {
-                correctComponent = component;
-                grab = true;
-            }
-        });
-        
-        if (grab) {
+        let correctComponent = findComponent(currentRoom.components,words[1]);
+        console.log(correctComponent);
+        if (correctComponent != null) {
             if (words.length > 2) {
                 outputText("I only understood you as far as " + words[0] + " " + words[1]);
             } else {
-                if (correctComponent instanceof Item || correctComponent instanceof Consumable) {
+                if (correctComponent instanceof Item) {
                     outputText("You picked up the " + words[1] + ".");
                     inventory.push(returnItem(currentRoom.components.splice(currentRoom.components.indexOf(correctComponent),1)));
                     updateEnemies();
@@ -616,10 +613,10 @@ function parseGrab(words) {
                 }
             }
         } else {
-            if (words[1] != undefined) {
-                outputText("There is no " + words[1] + " here.");
+            if (words.length > 1) {
+                outputText("I only understood you as far as " + words[0] + ".");
             } else {
-                previous_verb = "pick";
+                previous_verb = words[0];
                 outputText("What do you want to pick up?");
             }
         }
@@ -726,7 +723,7 @@ function parseAttack(words) {
             target = findComponent(currentRoom.components, words[1]);
             if (target instanceof Enemy) {
                 if (words.length < 3) {
-                    outputText("What do you want to attack the " + target.name.toLowerCase() + " with?");
+                    outputText("What do you want to attack the " + getName(target) + " with?");
                     previous_verb = "attack";
                     previous_component1 = target.name;
                 } else if (words.length == 3) {
@@ -736,15 +733,14 @@ function parseAttack(words) {
                     } else {
                         if (detectComponent(inventory, words[2])) {
                             weapon = findComponent(inventory, words[2]);
-                            if (weapon instanceof Item) {
+                            if (weapon instanceof Weapon) {
                                 attackEnemy(target, weapon);
-                                updateEnemies();
-                                
+                                updateEnemies();  
                             } else {
                                 outputText("You cannot attack with that!");
                             }
                         } else if (words[2] == "fist" || words[2] == "fists" || words[2] == "feet" || words[2] == "foot" || words[2] == "body" || words[2] == "self" || words[2] == "player") {
-                            let dummy = new Item("Body",1);
+                            let dummy = new Weapon("Body",1);
                             attackEnemy(target,dummy);
                             updateEnemies();
                             
@@ -779,14 +775,14 @@ function parseSwing(words) {
         let weapon = null;
         if (detectComponent(inventory, words[1]) || words[1] == "fist" || words[1] == "fists") {
             if (words[1] == "fist" || words[1] == "fists") {
-                weapon = new Item("Body",1);
+                weapon = new Weapon("Body",1);
             } else {
                 weapon = findComponent(inventory, words[1]);
             }
             if (words.length < 3) {
                 previous_verb = "swing";
                 previous_component1 = weapon.name;
-                outputText("What do you want to swing the " + weapon.name.toLowerCase() + " at?");
+                outputText("What do you want to swing the " + getName(weapon) + " at?");
             } else if (words.length == 3) {
                 if (detectComponent(currentRoom.components,words[2])) {
                     target = findComponent(currentRoom.components, words[2]);
@@ -834,12 +830,12 @@ function parseHelp(words) {
     } else {
         if (!(actionsPerformed.includes("grab") || actionsPerformed.includes("pick") )) {
             outputText("Try picking something up.")
-        } else if (!(actionsPerformed.includes("north") || actionsPerformed.includes("northeast") || actionsPerformed.includes("east") || actionsPerformed.includes("southeast") || actionsPerformed.includes("south") || actionsPerformed.includes("southwest") || actionsPerformed.includes("west") || actionsPerformed.includes("northwest"))) {
-            outputText("If you are still having trouble traversing, try using cardinal and ordinal directions.");
         } else if (!(actionsPerformed.includes("attack") || actionsPerformed.includes("stab") || actionsPerformed.includes("hit") || actionsPerformed.includes("swing") || actionsPerformed.includes("slash") || actionsPerformed.includes("fight"))) {
             outputText("You should try attacking something.");
         } else if (!actionsPerformed.includes("dodge")) {
             outputText("Have you tried dodging? Man it is awesome. It does take some luck, but it is totally worth trying.");
+        } else if (!(actionsPerformed.includes("north") || actionsPerformed.includes("northeast") || actionsPerformed.includes("east") || actionsPerformed.includes("southeast") || actionsPerformed.includes("south") || actionsPerformed.includes("southwest") || actionsPerformed.includes("west") || actionsPerformed.includes("northwest") || actionsPerformed.includes("west") || actionsPerformed.includes("go") || actionsPerformed.includes("walk") || actionsPerformed.includes("run") || actionsPerformed.includes("travel") || actionsPerformed.includes("head") || actionsPerformed.includes("move"))) {
+            outputText("If you are still having trouble traversing, try using cardinal and ordinal directions.");
         } else {
             outputText("You should try exploring a bit more.");
         }
@@ -915,8 +911,7 @@ function parseConsume(words) {
         outputText("What do you want to consume?");
         previous_verb = "consume";
     } else {
-        let food = searchInventory(words[1]);
-        console.log(item);
+        let food = findComponent(inventory, words[1]);
         if (food != null) {
             if (food instanceof Consumable) {
                 if (food.type == "eat") {
@@ -958,9 +953,9 @@ function parseBlock(words) {
             outputText("What do you want to block with?");
             previous_verb = "block";
         } else if (words.length == 2) {
-            let item = searchInventory(words[1]);
+            let item = findComponent(inventory, words[1]);
             if (item != null) {
-                if (item instanceof Item) {
+                if (item instanceof Weapon) {
                     block = item.damage;
                     updateEnemies();
                     return true;
@@ -983,12 +978,12 @@ function parseBlock(words) {
     }
 }
 
+function getName(component) {
+    return (typeof component.names === 'string') ? component.name.toLowerCase() : component.names[0].toLowerCase();
+}
+
 function hasEnemies() {
     return currentRoom.components.some(component => component instanceof Enemy);
-  }
-
-function searchInventory(itemName) {
-    return inventory.find(component => component.name.toLowerCase() === itemName) || null;
 }
 
 function consume(item) {
@@ -1049,37 +1044,36 @@ function attackPlayer(enemy) {
     }
 }
 
-function findComponent(list, name) {
-    let foundComponent = null;
-    list.forEach(component => {
-        if (component instanceof CustomEnemy) {
+function findComponent(components, name) {
+    for (let component of components) {
+        if (typeof component.names === 'string') {
+            if (component.names.toLowerCase() == name) {
+                return component;
+            }
+        } else {
             for (let componentName of component.names) {
                 if (componentName.toLowerCase() == name) {
-                    foundComponent = component;
-                    break;
+                    return component;
                 }
             }
-        } else if (component.name.toLowerCase() == name) {
-        foundComponent = component;
-    }});
-    return foundComponent;
+        }
+    }
+    return null;
 }
 
-function detectComponent(list, name) {
-    let found = false;
-    list.forEach(component => {
-        if (component instanceof CustomEnemy) {
+function detectComponent(components, name) {
+    for (let component of components) {
+        if (typeof component.names === 'string') {
+            if (component.names.toLowerCase() == name) return true;
+        } else {
             for (let componentName of component.names) {
-                console.log(componentName.toLowerCase() == name);
                 if (componentName.toLowerCase() == name) {
-                    found = true;
-                    break;
+                    return true;
                 }
             }
-        } else if (component.name.toLowerCase() == name) {
-        found = true;
-    }});
-    return found;
+        }
+    }
+    return false;
 }
 
 /**
