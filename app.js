@@ -135,8 +135,8 @@ function initializeRooms() {
     beginnerFork.description = "A fork in the road has two trails. One heads northeast, and the other heads east.";
     connectRooms(beginnerFork, starterRoad1, "west", "east");
 
-    const goblinDoor = new Room("Mysterious Door");
-    goblinDoor.description = "A big wooden door that seems to be locked.";
+    const goblinDoor = new Room("Goblin Door");
+    goblinDoor.description = "It seems to be locked. Perhaps leaving something of value may entice the goblins.";
     connectRooms(beginnerFork, goblinDoor, "northeast", "southwest");
 
     const starterRoad2 = new Room("Brooke Road");
