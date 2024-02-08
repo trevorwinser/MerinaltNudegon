@@ -167,7 +167,7 @@ function initializeRooms() {
 
     //Literal psychopath coding.
     const appleBranch = new CustomRoom("Small Branch", [() => outputText("Oh no! The branch broke as you grabbed the apple. You also were a little hurt by the fall."), removeRoom, () => health--], [() => words[0] === "grab" || words[0] === "pick", () => conditions[0], () => conditions[0]]);
-    appleBranch.description = "You can see a kingdom southwest from here. This branch seems weak enough to break from too much movement.";
+    appleBranch.description = "You can see a kingdom southwest from here. It seems this branch will break from too much movement.";
     connectRooms(largeBranch, appleBranch, "up", "down");
 
     const apple = new Consumable("Apple", 3);
@@ -296,6 +296,11 @@ function initializeRooms() {
     townGate1.description = "The gate entrance, adorned with intricate wrought-iron designs, opens to reveal a captivating view of a bustling town square is visible to the southeast.";
 
     connectRooms(lowestoftTrail2, townGate1, "south", "north");
+
+    const townSquare = new Room("Town Square");
+    townSquare.description = "The town square displays a large fountain with a statue of an unknown lady. The townsfolk are bustling with joy.";
+
+    connectRooms(townGate1, townSquare, "southeast", "northwest");
 }
 
 function addComponent(room, component) {
@@ -592,13 +597,12 @@ function handleAction(words) {
 function parseGrab(words) {
     if (words[0] == "pick" && words[1] == "up") {
         words.splice(1, 1);
-        parseGrab(words);
+        return parseGrab(words);
     } else if (words[0] == "pick" && words[2] == "up") {
         words.splice(2,2);
-        parseGrab(words);
+        return parseGrab(words);
     } else {
         let correctComponent = findComponent(currentRoom.components,words[1]);
-        console.log(correctComponent);
         if (correctComponent != null) {
             if (words.length > 2) {
                 outputText("I only understood you as far as " + words[0] + " " + words[1]);
@@ -690,7 +694,6 @@ function parseWait(words) {
         outputText("I only understood you as far as wait.");
     } else {
         let result = Math.ceil(Math.random() * 100);
-        console.log(result);
         if (result > 90)
             outputText("Time passes. You ponder your existence and the existence of the universe. You are not sure what to do with yourself.");
         else if (result > 50)
