@@ -4,10 +4,10 @@
 }
 
 body {
-    background-color: black;
+    background-color: #050505;
     color: #fff;
     font-size: 20px;
-    font-family: 'myFirstFont', sans-serif; /* Fallback to a generic sans-serif font */
+    font-family: 'myFirstFont', sans-serif;
 }
 
 #terminal-output {
@@ -25,7 +25,7 @@ input[type="text"] {
     background-color: transparent;
     border: none;
     color: #fff;
-    font-family: 'myFirstFont', sans-serif; /* Fallback to a generic sans-serif font */
+    font-family: 'myFirstFont', sans-serif;
     width: 100%;
 }
 
@@ -41,7 +41,7 @@ input[type="text"] {
     background-color: transparent;
     border: none;
     color: #fff;
-    font-family: 'myFirstFont', sans-serif; /* Fallback to a generic sans-serif font */
+    font-family: 'myFirstFont', sans-serif;
 }
 #logo {
     position: fixed;

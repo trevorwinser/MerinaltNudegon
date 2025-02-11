@@ -70,12 +70,14 @@ class Enemy extends Component {
     turnsInteracted = 0;
     dialogue;
     escapable = true;
-    constructor(names, health, defense, strength, attackTime) {
+    type = "hostile";
+    constructor(names, health, defense, strength, attackTime, type) {
         super(names);
         this.health = health;
         this.defense = defense;
         this.strength = strength;
         this.attackTime = attackTime;
+        this.type = type;
     }  
 }
 class NPC extends Component {
@@ -122,10 +124,11 @@ function initializeRooms() {
     sword.description = "A steel sword lays on the ground here."
     addComponent(currentRoom, sword);
 
-    const goblin = new Enemy("Goblin", 10, 0, 4, 3);
+    const goblin = new Enemy("Goblin", 10, 0, 4, 3, "hostile");
     goblin.description = "A goblin stands in your way.";
     goblin.escapable = false;
     addComponent(currentRoom,goblin);
+
 
     const nothing = new Room("Nothing");
     nothing.description = "You see nothing beyond this point. You should probably head back.";
@@ -951,7 +954,7 @@ function parseConsume(words) {
 }
 
 function parseBlock(words) {
-    if (!hasEnemies()) {
+    if (hasEnemies()) {
         if (words.length == 1) {
             outputText("What do you want to block with?");
             previous_verb = "block";
@@ -986,7 +989,7 @@ function getName(component) {
 }
 
 function hasEnemies() {
-    return currentRoom.components.some(component => component instanceof Enemy);
+    return currentRoom.components.some((component) => component instanceof Enemy);
 }
 
 function consume(item) {
