@@ -15,7 +15,7 @@ var luck = 1;
 var dodge = false;
 var dodgeCooldown = 0;
 var actionsPerformed = [];
-var playlist = ["audio/BeginnerArea.mp3","audio/Enemy_Defeated.mp3","audio/Kingdom.mp3","audio/Boss.mp3"];
+var playlist = ["audio/start.mp3","audio/victory.mp3","audio/kingdom.mp3","audio/boss.mp3"];
 var playlistIndex = 0;
 var audio = null;
 var musicPlayed = false;
@@ -109,9 +109,11 @@ class Consumable extends Item {
 }
 class Weapon extends Item {
     damage = 0;
-    constructor(names, damage) {
+    block = 0;
+    constructor(names, damage, block) {
         super(names)
         this.damage = damage;
+        this.block = block;
     }
 }
 
@@ -120,7 +122,7 @@ function initializeRooms() {
     starterRoad1.description = "The road to the east looks promising, but there's nothing to the west.";
     currentRoom = starterRoad1;
 
-    const sword = new Weapon("Sword", 3);
+    const sword = new Weapon("Sword", 3, 1);
     sword.description = "A steel sword lays on the ground here."
     addComponent(currentRoom, sword);
 
@@ -962,7 +964,7 @@ function parseBlock(words) {
             let item = findComponent(inventory, words[1]);
             if (item != null) {
                 if (item instanceof Weapon) {
-                    block = item.damage;
+                    block = item.block;
                     updateEnemies();
                     return true;
                 } else {
@@ -1022,9 +1024,9 @@ function attackPlayer(enemy) {
     if (!dodge) {
         outputText("The " + enemy.name.toLowerCase() + " attacked you!");
         if (block > 0) {
-            if (enemy.strength > block) {
+            if (enemy.strength > (block + defense)) {
                 health -= enemy.strength;
-                outputText("The block was ineffective, causing more damage.");
+                outputText("The block was ineffective.");
             } else {
                 outputText("The block was successful.");
             }
