@@ -2,14 +2,14 @@
 
 Welcome to the MerinaltNudegon repository! 
 
-Here you can find the source code for the web game Merinalt Nudgeon, a terminal dungeon where the only way to interact with the game is through commands!
+Here you can find the source code for the web game Merinalt Nudegon, a terminal dungeon where the only way to interact with the game is through commands!
 
 I know this game design is very out of date, but after playing Zork, a terminal dungeon from the 70s, I was fascinated with the idea of creating a interactive world entirely understood through text. 
-Now, without further ado, I will explain some core mechanics of the Merinalt Nudgeon.
+Now, without further ado, I will explain some core mechanics of the Merinalt Nudegon.
 
 ## Commands
 
-Merinalt Nudgeon offers a wide variety of commands. Part of the game is learning how to use the commands, much like you would learn to interact with the real world. 
+Merinalt Nudegon offers a wide variety of commands. Part of the game is learning how to use the commands, much like you would learn to interact with the real world. 
 I wanted to give users the opportunity to learn by playing rather than play by learning. There are a few commands that I will explicitly explain the syntax for as they are the most essential for playing.
 
 | Command                      | Syntax                  | Description                                                                       |
