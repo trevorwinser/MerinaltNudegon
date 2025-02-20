@@ -1,11 +1,13 @@
 import { Room, CustomRoom, Component, Enemy, NPC, Item, CustomItem, Consumable, Weapon } from './classes.js';
+import { parse_start } from './actions/start.js';
+import { parse_stop } from './actions/stop.js';
 
 var current_room = null;
 var rooms = [];
 var inventory = [];
 var previous_verb = null;
 var previous_component1 = null;
-var dictionary = ["fight","attack","hit","swing","slash","stab","punch","dodge","look","grab","pick","drop","inventory","wait","help","info","stop","start","play","eat","drink","consume","block"];
+export var dictionary = ["fight","attack","hit","swing","slash","stab","punch","dodge","look","grab","pick","drop","inventory","wait","help","info","stop","start","play","eat","drink","consume","block"];
 var movement_dictionary = ["go","walk","run","travel","head","move","north","northeast","east","southeast","south","southwest","west","northwest","climb","jump"];
 dictionary = dictionary.concat(movement_dictionary);
 var health = 10;
@@ -17,7 +19,7 @@ var dodge_cooldown = 0;
 var actions_performed = [];
 var playlist = ["audio/start.mp3","audio/victory.mp3","audio/kingdom.mp3","audio/boss.mp3"];
 var playlist_index = 0;
-var audio = null;
+export var audio = null;
 var music_played = false;
 
 function initialize_rooms() {
@@ -762,62 +764,6 @@ function parse_info(words) {
     }
 }
 
-function parse_stop(words) {
-    if (words.length == 1) {
-        previous_verb = "stop";
-        output_text("What would you like to stop?");
-    } else if (words.length == 2) {
-        if (words[1] == 'sound' || words[1] == 'music') {
-            if (audio != null) {
-                output_text("Music has stopped.");
-                audio.pause();
-            }
-        } else if (words[1] == 'time') {
-            output_text("Time has successfully stopped until your next action.");
-        } else {
-            output_text("I only understood you as far as stop.");
-        }
-    } else {
-        if (words[1] == 'sound' || words[1] == 'music') {
-            output_text("I only understood you as far as stop " +words[1]+ ".");
-        } else if (words[1] == 'time') {
-            output_text("I only understood you as far as stop time.");
-        } else {
-            output_text("I only understood you as far as stop.");
-        }
-    }
-}
-
-function parse_start(words) { 
-    if (words.length == 1) {
-        previous_verb = "play";
-        output_text("What would you like to play?");
-    } else if (words.length == 2) {
-        if (words[1] == "sound" || words[1] == "music") {
-            if (audio != null) {
-                output_text("Music has started.");
-                audio.play();
-            }
-        } else if (words[1] == "mirenalt") {
-            output_text("You are already playing that game!");
-        } else {
-            output_text("I only understood you as far as " + words[0] + ".");
-        }
-    } else if (words.length == 3) {
-        if (words[1] == "mirenalt" && words[2] == "nudgeon") {
-            output_text("You are already playing that game!");
-        } else {
-            if (words[1] == "mirenalt") {
-                output_text("I only understood you as far as play mirenalt.");
-            } else {
-                output_text("I only understood you as far as play.");
-            }
-        }
-    } else {
-        output_text("I only understood you as far as play.");
-    }
-}
-
 function parse_consume(words) {
     if (words.length == 1) {
         output_text("What do you want to consume?");
@@ -1015,7 +961,7 @@ function remove_room(door_room) {
     }
 }
 
-function output_text(txt) {
+export function output_text(txt) {
     const p = document.createElement("p");
     p.innerHTML = txt;
     terminal_output.appendChild(p);

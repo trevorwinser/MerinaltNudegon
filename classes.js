@@ -1,3 +1,5 @@
+import { dictionary } from './app.js'
+
 export class Room {
     location;
     description = "";
