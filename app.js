@@ -1,4 +1,4 @@
-import { Room, CustomRoom, Component, Enemy, NPC, Item, CustomItem, Consumable, Weapon } from './GameClasses.js';
+import { Room, CustomRoom, Component, Enemy, NPC, Item, CustomItem, Consumable, Weapon } from './classes.js';
 
 var current_room = null;
 var rooms = [];
