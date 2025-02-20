@@ -1,323 +1,227 @@
-var currentRoom = null;
+import { Room, CustomRoom, Component, Enemy, NPC, Item, CustomItem, Consumable, Weapon } from './GameClasses.js';
+
+var current_room = null;
 var rooms = [];
 var inventory = [];
 var previous_verb = null;
 var previous_component1 = null;
-var previous_component2 = null;
 var dictionary = ["fight","attack","hit","swing","slash","stab","punch","dodge","look","grab","pick","drop","inventory","wait","help","info","stop","start","play","eat","drink","consume","block"];
-var movementDictionary = ["go","walk","run","travel","head","move","north","northeast","east","southeast","south","southwest","west","northwest","climb","jump"];
-dictionary = dictionary.concat(movementDictionary);
-var basicDictionary = dictionary;
+var movement_dictionary = ["go","walk","run","travel","head","move","north","northeast","east","southeast","south","southwest","west","northwest","climb","jump"];
+dictionary = dictionary.concat(movement_dictionary);
 var health = 10;
 var defense = 1;
 var block = 0;
 var luck = 1;
 var dodge = false;
-var dodgeCooldown = 0;
-var actionsPerformed = [];
+var dodge_cooldown = 0;
+var actions_performed = [];
 var playlist = ["audio/start.mp3","audio/victory.mp3","audio/kingdom.mp3","audio/boss.mp3"];
-var playlistIndex = 0;
+var playlist_index = 0;
 var audio = null;
-var musicPlayed = false;
+var music_played = false;
 
-
-class Room {
-    location;
-    description = "";
-    components = [];
-    dict = dictionary;
-    connectedRooms = [];
-    directions = [];    //corresponds to the direction of connected rooms.
-    entered = false;
-    constructor(location) {
-        this.location = location;
-    }
-}
-class CustomRoom extends Room {
-    conditions = [];
-    f;
-    constructor(location, f, conditions) {
-        super(location);
-        this.f = f;
-        this.conditions = conditions;
-    }
-    checkAction(words) {
-        for (let i = 0; i < this.conditions.length; i++) {
-            if (this.conditions[i]) {
-                this.f[i](this);
-            }
-        }
-    }
-}
-class Component {
-    name = null;
-    names = [];
-    description;
-    constructor(names) {
-        this.names = names;
-        if (typeof names === 'string') {
-            this.name = names;
-        } else {
-            this.name = names[0];
-        }
-    }
-}
-class Enemy extends Component {
-    health = 1;
-    defense = 0;
-    strength = 0;
-    attackTime = 9999999;
-    turnsInteracted = 0;
-    dialogue;
-    escapable = true;
-    type = "hostile";
-    constructor(names, health, defense, strength, attackTime, type) {
-        super(names);
-        this.health = health;
-        this.defense = defense;
-        this.strength = strength;
-        this.attackTime = attackTime;
-        this.type = type;
-    }  
-}
-class NPC extends Component {
-    dialogue = [];
-    constructor(names, dialogue) {
-        super(names);
-        this.dialogue = dialogue;
-    }
-}
-class Item extends Component {
-    constructor(names) {
-        super(names);
-    }
-}
-class CustomItem extends Item {
-    id = null;
-    constructor(names, id) {
-        super(names);
-        this.id = id;
-    }
-}
-class Consumable extends Item {
-    health = 0;
-    type = "eat";
-    constructor(names, health) {
-        super(names);
-        this.health = health;
-    }
-}
-class Weapon extends Item {
-    damage = 0;
-    block = 0;
-    constructor(names, damage, block) {
-        super(names)
-        this.damage = damage;
-        this.block = block;
-    }
-}
-
-function initializeRooms() {
-    const starterRoad1 = new Room("Brooke Road");
-    starterRoad1.description = "The road to the east looks promising, but there's nothing to the west.";
-    currentRoom = starterRoad1;
+function initialize_rooms() {
+    const starter_road_1 = new Room("Brooke Road");
+    starter_road_1.description = "The road to the east looks promising, but there's nothing to the west.";
+    current_room = starter_road_1;
 
     const sword = new Weapon("Sword", 3, 1);
     sword.description = "A steel sword lays on the ground here."
-    addComponent(currentRoom, sword);
+    add_component(current_room, sword);
 
     const goblin = new Enemy("Goblin", 10, 0, 4, 3, "hostile");
     goblin.description = "A goblin stands in your way.";
     goblin.escapable = false;
-    addComponent(currentRoom,goblin);
+    add_component(current_room,goblin);
 
 
     const nothing = new Room("Nothing");
     nothing.description = "You see nothing beyond this point. You should probably head back.";
-    connectRooms(starterRoad1, nothing, "west", "east");
+    connect_rooms(starter_road_1, nothing, "west", "east");
 
-    const beginnerFork = new Room("Fork in the Road");
-    beginnerFork.description = "A fork in the road has two trails. One heads northeast, and the other heads east.";
-    connectRooms(beginnerFork, starterRoad1, "west", "east");
+    const fork_in_the_road = new Room("Fork in the Road");
+    fork_in_the_road.description = "A fork in the road has two trails. One heads northeast, and the other heads east.";
+    connect_rooms(fork_in_the_road, starter_road_1, "west", "east");
 
-    const goblinDoor = new Room("Goblin Door");
-    goblinDoor.description = "It seems to be locked. Perhaps leaving something of value may entice the goblins.";
-    connectRooms(beginnerFork, goblinDoor, "northeast", "southwest");
+    const goblin_door = new Room("Goblin Door");
+    goblin_door.description = "A large door stands in your way. There is a strange symbol branded across it with a small opening just below it.";
+    connect_rooms(fork_in_the_road, goblin_door, "northeast", "southwest");
 
-    const starterRoad2 = new Room("Brooke Road");
-    starterRoad2.description = "This road leads from east to west.";
-    connectRooms(beginnerFork, starterRoad2, "east", "west");
+    const starter_road_2 = new Room("Brooke Road");
+    starter_road_2.description = "To the east, vast plains stretch out, and a tree so tall that it is visible from where you stand.";
+    connect_rooms(fork_in_the_road, starter_road_2, "east", "west");
 
-    const wildField1 = new Room("Wild Fields");
-    const wildField2 = new Room("Wild Fields");
-    const wildField3 = new Room("Wild Fields");
-    wildField3.description = "A trail that leads towards the mountains is northeast from here.";
-    const wildField4 = new Room("Wild Fields");
-    const wildField5 = new Room("Wild Fields");
-    wildField5.description = "This vast meadow goes on for a while. It may be hard to know where you're going from here, so mapping it out might help.";
-    const wildField6 = new Room("Wild Fields");
-    const wildField7 = new Room("Wild Fields");
-    wildField7.description = "The field spreads far in every direction.";
-    const wildField8 = new Room("Wild Fields");
-    const wildField9 = new Room("Wild Fields");
-    const wildField10 = new Room("Wild Fields");
-    const wildField11 = new Room("Wild Fields");
-    const wildField12 = new Room("Wild Fields");
+    const wild_field_1 = new Room("Wild Fields");
+    const wild_field_2 = new Room("Wild Fields");
+    const wild_field_3 = new Room("Wild Fields");
+    wild_field_3.description = "A trail that leads towards the mountains is northeast from here.";
+    const wild_field_4 = new Room("Wild Fields");
+    const wild_field_5 = new Room("Wild Fields");
+    wild_field_5.description = "This vast meadow goes on for a while. It may be hard to know where you're going from here, so mapping it out might help.";
+    const wild_field_6 = new Room("Wild Fields");
+    const wild_field_7 = new Room("Wild Fields");
+    wild_field_7.description = "The field spreads far in every direction.";
+    const wild_field_8 = new Room("Wild Fields");
+    const wild_field_9 = new Room("Wild Fields");
+    const wild_field_10 = new Room("Wild Fields");
+    const wild_field_11 = new Room("Wild Fields");
+    const wild_field_12 = new Room("Wild Fields");
 
-    const grandTree = new Room("Grand Tree");
-    grandTree.description = "The grand tree soars to towering heights, its branches reaching outward, while its mighty trunk radiates a mesmerizing glow.";
-    const largeBranch = new Room("Large Branch");
-    largeBranch.description = "This branch is sturdy. From here, you can see the entire field from here. Going up might allow you to see further.";
-    connectRooms(grandTree, largeBranch, "up", "down");
+    const grand_tree = new Room("Grand Tree");
+    grand_tree.description = "The grand tree soars to towering heights, its branches reaching outward, while its mighty trunk radiates a mesmerizing glow.";
+    const large_branch = new Room("Large Branch");
+    large_branch.description = "This branch is sturdy. From here, you can see the entire field from here. Going up might allow you to see further.";
+    connect_rooms(grand_tree, large_branch, "up", "down");
 
-    //Literal psychopath coding.
-    const appleBranch = new CustomRoom("Small Branch", [() => outputText("Oh no! The branch broke as you grabbed the apple. You also were a little hurt by the fall."), removeRoom, () => health--], [() => words[0] === "grab" || words[0] === "pick", () => conditions[0], () => conditions[0]]);
-    appleBranch.description = "You can see a kingdom southwest from here. It seems this branch will break from too much movement.";
-    connectRooms(largeBranch, appleBranch, "up", "down");
+    // Literal psychopath coding.
+    // Find a new way, I BEG OF YOU
+    const apple_branch = new CustomRoom("Small Branch", [() => output_text("Oh no! The branch broke as you grabbed the apple. You also were a little hurt by the fall."), remove_room, () => health--], [() => words[0] === "grab" || words[0] === "pick", () => conditions[0], () => conditions[0]]);
+    apple_branch.description = "You can see a kingdom southwest from here. It seems this branch will break from too much movement.";
+    connect_rooms(large_branch, apple_branch, "up", "down");
 
     const apple = new Consumable("Apple", 3);
     apple.description = "A shimmering apple can be seen.";
-    appleBranch.components.push(apple);
+    apple_branch.components.push(apple);
 
-    const wildField13 = new Room("Wild Fields");
-    const wildField14 = new Room("Wild Fields");
-    const wildField15 = new Room("Wild Fields");
-    const wildField16 = new Room("Wild Fields");
-    const wildField17 = new Room("Wild Fields");
+    const wild_field_13 = new Room("Wild Fields");
+    const wild_field_14 = new Room("Wild Fields");
+    const wild_field_15 = new Room("Wild Fields");
+    const wild_field_16 = new Room("Wild Fields");
+    const wild_field_17 = new Room("Wild Fields");
 
-    const wildField18 = new CustomRoom("Wild Fields");
+    const wild_field_18 = new CustomRoom("Wild Fields");
     const TMK = new Enemy(["Knight","Armor"], 10, 5, 5, 2);
     TMK.description = "A knight with seemingly no one inside stands tall and still here.";
-    wildField18.components.push(TMK);
+    wild_field_18.components.push(TMK);
     
-    const wildField19 = new Room("Wild Fields");
-    const wildField20 = new Room("Wild Fields");
-    const wildField21 = new Room("Wild Fields");
+    const wild_field_19 = new Room("Wild Fields");
+    const wild_field_20 = new Room("Wild Fields");
+    const wild_field_21 = new Room("Wild Fields");
 
-    const beach1 = new Room("Beach");
-    beach1.description = "This coast consists of various shells and colorful rocks.";
-    const beach2 = new Room("Beach");
-    const beach3 = new Room("Beach");
-    const beach4 = new Room("Beach");
-    const beach5 = new Room("Beach");
-    const beach6 = new Room("Beach");
+    const beach_1 = new Room("Beach");
+    beach_1.description = "This coast consists of various shells and colorful rocks.";
+    const beach_2 = new Room("Beach");
+    const beach_3 = new Room("Beach");
+    const beach_4 = new Room("Beach");
+    const beach_5 = new Room("Beach");
+    const beach_6 = new Room("Beach");
 
-    const lowestoftTrail1 = new Room("Lowestoft Trail");
-    lowestoftTrail1.description = "A trail towards the Lowestoft Kingdom spans southwest from here. To the northeast is a vast field.";
-    const lowestoftTrail2 = new Room("Lowestoft Trail");
-    lowestoftTrail2.description = "The Lowestoft Kingdom can be seen directly south from here.";
+    const lowestoft_trail_1 = new Room("Lowestoft Trail");
+    lowestoft_trail_1.description = "A trail towards the Lowestoft Kingdom spans southwest from here. To the northeast is a vast field.";
+    const lowestoft_trail_2 = new Room("Lowestoft Trail");
+    lowestoft_trail_2.description = "The Lowestoft Kingdom can be seen directly south from here.";
 
-    connectRooms(wildField1,wildField2,"east","west");
-    connectRooms(wildField2,wildField3,"east","west");
-    connectRooms(wildField3,wildField4,"east","west");
-    connectRooms(starterRoad2,wildField5,"east","west");
-    connectRooms(wildField5,wildField6,"east","west");
-    connectRooms(wildField6,wildField7,"east","west");
-    connectRooms(wildField7,wildField8,"east","west");
-    connectRooms(wildField8,wildField9,"east","west");
-    connectRooms(wildField9,wildField10,"east","west");
-    connectRooms(wildField10,beach1,"east","west");
-    connectRooms(wildField11,wildField12,"east","west");
-    connectRooms(wildField12,grandTree,"east","west");
-    connectRooms(grandTree,wildField13,"east","west");
-    connectRooms(wildField13,wildField14,"east","west");
-    connectRooms(wildField14,beach2,"east","west");
-    connectRooms(wildField15,wildField16,"east","west");
-    connectRooms(wildField16,wildField17,"east","west");
-    connectRooms(wildField17,wildField18,"east","west");
-    connectRooms(wildField18,beach3,"east","west");
-    connectRooms(wildField19,wildField20,"east","west");
-    connectRooms(wildField20,wildField21,"east","west");
-    connectRooms(wildField21,beach4,"east","west");
-    connectRooms(lowestoftTrail1,beach5,"east","west");
-    connectRooms(beach5,beach6,"east","west");
+    connect_rooms(wild_field_1,wild_field_2,"east","west");
+    connect_rooms(wild_field_2,wild_field_3,"east","west");
+    connect_rooms(wild_field_3,wild_field_4,"east","west");
+    connect_rooms(starter_road_2,wild_field_5,"east","west");
+    connect_rooms(wild_field_5,wild_field_6,"east","west");
+    connect_rooms(wild_field_6,wild_field_7,"east","west");
+    connect_rooms(wild_field_7,wild_field_8,"east","west");
+    connect_rooms(wild_field_8,wild_field_9,"east","west");
+    connect_rooms(wild_field_9,wild_field_10,"east","west");
+    connect_rooms(wild_field_10,beach_1,"east","west");
+    connect_rooms(wild_field_11,wild_field_12,"east","west");
+    connect_rooms(wild_field_12,grand_tree,"east","west");
+    connect_rooms(grand_tree,wild_field_13,"east","west");
+    connect_rooms(wild_field_13,wild_field_14,"east","west");
+    connect_rooms(wild_field_14,beach_2,"east","west");
+    connect_rooms(wild_field_15,wild_field_16,"east","west");
+    connect_rooms(wild_field_16,wild_field_17,"east","west");
+    connect_rooms(wild_field_17,wild_field_18,"east","west");
+    connect_rooms(wild_field_18,beach_3,"east","west");
+    connect_rooms(wild_field_19,wild_field_20,"east","west");
+    connect_rooms(wild_field_20,wild_field_21,"east","west");
+    connect_rooms(wild_field_21,beach_4,"east","west");
+    connect_rooms(lowestoft_trail_1,beach_5,"east","west");
+    connect_rooms(beach_5,beach_6,"east","west");
 
-    connectRooms(wildField1,wildField6,"south","north");
-    connectRooms(wildField2,wildField7,"south","north");
-    connectRooms(wildField3,wildField8,"south","north");
-    connectRooms(wildField4,wildField9,"south","north");
-    connectRooms(wildField6,wildField11,"south","north");
-    connectRooms(wildField7,wildField12,"south","north");
-    connectRooms(wildField8,grandTree,"south","north");
-    connectRooms(wildField9,wildField13,"south","north");
-    connectRooms(wildField10,wildField14,"south","north");
-    connectRooms(beach1,beach2,"south","north");
-    connectRooms(wildField11,wildField15,"south","north");
-    connectRooms(wildField12,wildField16,"south","north");
-    connectRooms(grandTree,wildField17,"south","north");
-    connectRooms(wildField13,wildField18,"south","north");
-    connectRooms(wildField14,beach3,"south","north");
-    connectRooms(wildField15,wildField19,"south","north");
-    connectRooms(wildField16,wildField20,"south","north");
-    connectRooms(wildField17,wildField21,"south","north");
-    connectRooms(wildField18,beach4,"south","north");
-    connectRooms(wildField19,lowestoftTrail1,"south","north");
-    connectRooms(wildField20,beach5,"south","north");
-    connectRooms(wildField21,beach6,"south","north");
+    connect_rooms(wild_field_1,wild_field_6,"south","north");
+    connect_rooms(wild_field_2,wild_field_7,"south","north");
+    connect_rooms(wild_field_3,wild_field_8,"south","north");
+    connect_rooms(wild_field_4,wild_field_9,"south","north");
+    connect_rooms(wild_field_6,wild_field_11,"south","north");
+    connect_rooms(wild_field_7,wild_field_12,"south","north");
+    connect_rooms(wild_field_8,grand_tree,"south","north");
+    connect_rooms(wild_field_9,wild_field_13,"south","north");
+    connect_rooms(wild_field_10,wild_field_14,"south","north");
+    connect_rooms(beach_1,beach_2,"south","north");
+    connect_rooms(wild_field_11,wild_field_15,"south","north");
+    connect_rooms(wild_field_12,wild_field_16,"south","north");
+    connect_rooms(grand_tree,wild_field_17,"south","north");
+    connect_rooms(wild_field_13,wild_field_18,"south","north");
+    connect_rooms(wild_field_14,beach_3,"south","north");
+    connect_rooms(wild_field_15,wild_field_19,"south","north");
+    connect_rooms(wild_field_16,wild_field_20,"south","north");
+    connect_rooms(wild_field_17,wild_field_21,"south","north");
+    connect_rooms(wild_field_18,beach_4,"south","north");
+    connect_rooms(wild_field_19,lowestoft_trail_1,"south","north");
+    connect_rooms(wild_field_20,beach_5,"south","north");
+    connect_rooms(wild_field_21,beach_6,"south","north");
 
-    connectRooms(wildField1,wildField5,"southwest","northeast");
-    connectRooms(wildField2,wildField6,"southwest","northeast");
-    connectRooms(wildField3,wildField7,"southwest","northeast");
-    connectRooms(wildField4,wildField8,"southwest","northeast");
-    connectRooms(wildField7,wildField11,"southwest","northeast");
-    connectRooms(wildField8,wildField12,"southwest","northeast");
-    connectRooms(wildField9,grandTree,"southwest","northeast");
-    connectRooms(wildField10,wildField13,"southwest","northeast");
-    connectRooms(beach1,wildField14,"southwest","northeast");
-    connectRooms(wildField12,wildField15,"southwest","northeast");
-    connectRooms(grandTree,wildField16,"southwest","northeast");
-    connectRooms(wildField13,wildField17,"southwest","northeast");
-    connectRooms(wildField14,wildField18,"southwest","northeast");
-    connectRooms(beach2,beach3,"southwest","northeast");
-    connectRooms(wildField16,wildField19,"southwest","northeast");
-    connectRooms(wildField17,wildField20,"southwest","northeast");
-    connectRooms(wildField18,wildField21,"southwest","northeast");
-    connectRooms(wildField20,lowestoftTrail1,"southwest","northeast");
-    connectRooms(wildField21,beach5,"southwest","northeast");
-    connectRooms(beach4,beach6,"southwest","northeast");
-    connectRooms(lowestoftTrail1,lowestoftTrail2,"southwest","northeast");
+    connect_rooms(wild_field_1,wild_field_5,"southwest","northeast");
+    connect_rooms(wild_field_2,wild_field_6,"southwest","northeast");
+    connect_rooms(wild_field_3,wild_field_7,"southwest","northeast");
+    connect_rooms(wild_field_4,wild_field_8,"southwest","northeast");
+    connect_rooms(wild_field_7,wild_field_11,"southwest","northeast");
+    connect_rooms(wild_field_8,wild_field_12,"southwest","northeast");
+    connect_rooms(wild_field_9,grand_tree,"southwest","northeast");
+    connect_rooms(wild_field_10,wild_field_13,"southwest","northeast");
+    connect_rooms(beach_1,wild_field_14,"southwest","northeast");
+    connect_rooms(wild_field_12,wild_field_15,"southwest","northeast");
+    connect_rooms(grand_tree,wild_field_16,"southwest","northeast");
+    connect_rooms(wild_field_13,wild_field_17,"southwest","northeast");
+    connect_rooms(wild_field_14,wild_field_18,"southwest","northeast");
+    connect_rooms(beach_2,beach_3,"southwest","northeast");
+    connect_rooms(wild_field_16,wild_field_19,"southwest","northeast");
+    connect_rooms(wild_field_17,wild_field_20,"southwest","northeast");
+    connect_rooms(wild_field_18,wild_field_21,"southwest","northeast");
+    connect_rooms(wild_field_20,lowestoft_trail_1,"southwest","northeast");
+    connect_rooms(wild_field_21,beach_5,"southwest","northeast");
+    connect_rooms(beach_4,beach_6,"southwest","northeast");
+    connect_rooms(lowestoft_trail_1,lowestoft_trail_2,"southwest","northeast");
 
-    connectRooms(wildField1,wildField7,"southeast","northwest");
-    connectRooms(wildField2,wildField8,"southeast","northwest");
-    connectRooms(wildField3,wildField9,"southeast","northwest");
-    connectRooms(wildField4,wildField10,"southeast","northwest");
-    connectRooms(wildField5,wildField11,"southeast","northwest");
-    connectRooms(wildField6,wildField12,"southeast","northwest");
-    connectRooms(wildField7,grandTree,"southeast","northwest");
-    connectRooms(wildField8,wildField13,"southeast","northwest");
-    connectRooms(wildField9,wildField14,"southeast","northwest");
-    connectRooms(wildField10,beach2,"southeast","northwest");
-    connectRooms(wildField11,wildField16,"southeast","northwest");
-    connectRooms(wildField12,wildField17,"southeast","northwest");
-    connectRooms(grandTree,wildField18,"southeast","northwest");
-    connectRooms(wildField13,beach3,"southeast","northwest");
-    connectRooms(wildField15,wildField20,"southeast","northwest");
-    connectRooms(wildField16,wildField21,"southeast","northwest");
-    connectRooms(wildField17,beach4,"southeast","northwest");
-    connectRooms(wildField19,beach5,"southeast","northwest");
-    connectRooms(wildField20,beach6,"southeast","northwest");
+    connect_rooms(wild_field_1,wild_field_7,"southeast","northwest");
+    connect_rooms(wild_field_2,wild_field_8,"southeast","northwest");
+    connect_rooms(wild_field_3,wild_field_9,"southeast","northwest");
+    connect_rooms(wild_field_4,wild_field_10,"southeast","northwest");
+    connect_rooms(wild_field_5,wild_field_11,"southeast","northwest");
+    connect_rooms(wild_field_6,wild_field_12,"southeast","northwest");
+    connect_rooms(wild_field_7,grand_tree,"southeast","northwest");
+    connect_rooms(wild_field_8,wild_field_13,"southeast","northwest");
+    connect_rooms(wild_field_9,wild_field_14,"southeast","northwest");
+    connect_rooms(wild_field_10,beach_2,"southeast","northwest");
+    connect_rooms(wild_field_11,wild_field_16,"southeast","northwest");
+    connect_rooms(wild_field_12,wild_field_17,"southeast","northwest");
+    connect_rooms(grand_tree,wild_field_18,"southeast","northwest");
+    connect_rooms(wild_field_13,beach_3,"southeast","northwest");
+    connect_rooms(wild_field_15,wild_field_20,"southeast","northwest");
+    connect_rooms(wild_field_16,wild_field_21,"southeast","northwest");
+    connect_rooms(wild_field_17,beach_4,"southeast","northwest");
+    connect_rooms(wild_field_19,beach_5,"southeast","northwest");
+    connect_rooms(wild_field_20,beach_6,"southeast","northwest");
 
     const townGate1 = new Room("Gate Entrance");
     townGate1.description = "The gate entrance, adorned with intricate wrought-iron designs, opens to reveal a captivating view of a bustling town square is visible to the southeast.";
 
-    connectRooms(lowestoftTrail2, townGate1, "south", "north");
+    connect_rooms(lowestoft_trail_2, townGate1, "south", "north");
 
     const townSquare = new Room("Town Square");
     townSquare.description = "The town square displays a large fountain with a statue of an unknown lady. The townsfolk are bustling with joy.";
 
-    connectRooms(townGate1, townSquare, "southeast", "northwest");
+    connect_rooms(townGate1, townSquare, "southeast", "northwest");
 }
 
-function addComponent(room, component) {
+function add_component(room, component) {
     room.components.push(component);
 }
 
 //Specific case when attempting to add elements of a list of size 1 to another list.
-function returnItem(list) {
+function return_item(list) {
     return list[0];
 }
 
-function separateCommand(sentence) {
+function separate_command(sentence) {
     sentence = sentence.toLowerCase();
     const words = sentence.split(" ");
     return words;
@@ -334,25 +238,25 @@ function parse(words) {
         previous_verb = null;
     }
     
-    checkSyntax(words);
+    check_syntax(words);
 }
 
-function checkSyntax(words) {
+function check_syntax(words) {
     let verb = words[0];
-    if (checkVerb(verb)) {
-        if (!actionsPerformed.includes(verb)) actionsPerformed.push(verb);
-        if (movementDictionary.includes(verb)) {
-            if (roomEscapable()) {
-                if (handleMovement(words)) {
-                    if (currentRoom instanceof CustomRoom) {
-                        currentRoom.checkAction(words);
+    if (check_verb(verb)) {
+        if (!actions_performed.includes(verb)) actions_performed.push(verb);
+        if (movement_dictionary.includes(verb)) {
+            if (room_escapable()) {
+                if (handle_movement(words)) {
+                    if (current_room instanceof CustomRoom) {
+                        current_room.check_action(words);
                     }
                 }
             }
         } else {
-            if (handleAction(words)) {
-                if (currentRoom instanceof CustomRoom) {
-                    currentRoom.checkAction(words);
+            if (handle_action(words)) {
+                if (current_room instanceof CustomRoom) {
+                    current_room.check_action(words);
                 }
             }
 
@@ -360,148 +264,148 @@ function checkSyntax(words) {
     }
 }
 
-function checkVerb(verb) { 
+function check_verb(verb) { 
     if (dictionary.includes(verb)) {
-        if (currentRoom.dict.includes(verb)) {
+        if (current_room.dict.includes(verb)) {
             return true;
         }
-        outputText("You cannot do that here.");
+        output_text("You cannot do that here.");
         return false;
     }
     if (verb != "") {
-        outputText("I do not recognize the verb \"" + verb + "\"");
+        output_text("I do not recognize the verb \"" + verb + "\"");
     }
     return false;
 }
 
-function handleMovement(words) {
+function handle_movement(words) {
     switch (words[0]) {
         case 'go':
-            return parseMove(words);
+            return parse_move(words);
         case 'walk':
-            return parseMove(words);
+            return parse_move(words);
         case 'run':
-            return parseMove(words);
+            return parse_move(words);
         case 'travel':
-            return parseMove(words);
+            return parse_move(words);
         case 'head':
-            return parseMove(words);
+            return parse_move(words);
         case 'move':
-            return parseMove(words);
+            return parse_move(words);
         case 'north':
-            return parseMove(words);
+            return parse_move(words);
         case 'northeast':
-            return parseMove(words);
+            return parse_move(words);
         case 'east':
-            return parseMove(words);
+            return parse_move(words);
         case 'southeast':
-            return parseMove(words);
+            return parse_move(words);
         case 'south':
-            return parseMove(words);
+            return parse_move(words);
         case 'southwest':
-            return parseMove(words);
+            return parse_move(words);
         case 'west':
-            return parseMove(words);
+            return parse_move(words);
         case 'northwest':
-            return parseMove(words);
+            return parse_move(words);
         case 'climb':
-            return parseClimb(words);
+            return parse_climb(words);
         case 'jump':
-            return parseJump(words);
+            return parse_jump(words);
         default:
-            outputText("That's not a valid direction.");    //SHOULD NOT HAPPEN.
+            output_text("That's not a valid direction.");    //SHOULD NOT HAPPEN.
     }
     return false;
 }
 
-function parseMove(words) {
+function parse_move(words) {
     if (words.length == 1) {
         if (words[0] == "go" || words[0] == "walk" || words[0] == "run" || words[0] == "travel" || words[0] == "head" || words[0] == "move") {
-            outputText("Which direction do you want to go?");
+            output_text("Which direction do you want to go?");
             previous_verb = "go";
         } else {
-            return handleDirection(words[0]);
+            return handle_direction(words[0]);
         }
     } else if (words.length == 2) {
         if (words[0] == "go" || words[0] == "walk" || words[0] == "run" || words[0] == "travel" || words[0] == "head" || words[0] == "move") {
-            return handleDirection(words[1]);
+            return handle_direction(words[1]);
         } else {
-            outputText("I only understood you as far as " + words[0] + ".");
+            output_text("I only understood you as far as " + words[0] + ".");
         }
     }
     return false;
 }
 
-function parseClimb(words) {
+function parse_climb(words) {
     if (words.length == 1) {
-        return handleDirection("up");  //Defaults climb to go up
+        return handle_direction("up");  //Defaults climb to go up
     } else {
         if (words[1] == 'up' || words[1] == 'down') {
             if (words.length > 2) {
-                outputText("I only understood you as far as climb " + words[1] + ".");
+                output_text("I only understood you as far as climb " + words[1] + ".");
             }
             else {
-                return handleDirection(words[1]);
+                return handle_direction(words[1]);
             }
         } else {
-            outputText("I only understood you as far as climb.");
+            output_text("I only understood you as far as climb.");
         }
     } 
     return false;
 }
 
-function parseJump(words) {
+function parse_jump(words) {
     if (words.length == 1) {
-        if (handleDirection("down")) {
-            outputText("Wheeeeee!");
+        if (handle_direction("down")) {
+            output_text("Wheeeeee!");
             return true;
         }
     } else if (words.length == 2) {
         if (words[1] == "down") {
-            if (handleDirection("down")) {
-                outputText("Wheeeeee!");
+            if (handle_direction("down")) {
+                output_text("Wheeeeee!");
                 return true;
             }
         } else {
-            outputText("I only understood you as far as jump.");
+            output_text("I only understood you as far as jump.");
         }
     } else {
-        outputText("I only understood you as far as jump.");
+        output_text("I only understood you as far as jump.");
     }
     return false;
 }
 
-function handleDirection(direction) {
-    if(!currentRoom.directions.some(dir => {
+function handle_direction(direction) {
+    if(!current_room.directions.some(dir => {
         if (dir == direction) {
-            let index = currentRoom.directions.indexOf(direction);
-            changeRoom(index); return true;
+            let index = current_room.directions.indexOf(direction);
+            change_room(index); return true;
         }
         })) {
-            outputText("You cannot go that direction.");
+            output_text("You cannot go that direction.");
             return false;
         }
 }
 
-function changeRoom(index) {
-    currentRoom = currentRoom.connectedRooms[index];
-    outputText(" ");
-    outputText(currentRoom.location);
-    if (!currentRoom.entered) {
-        outputText(currentRoom.description);
-        currentRoom.entered = true;
+function change_room(index) {
+    current_room = current_room.connected_rooms[index];
+    output_text(" ");
+    output_text(current_room.location);
+    if (!current_room.entered) {
+        output_text(current_room.description);
+        current_room.entered = true;
     }
-    for (let component of currentRoom.components) {
-        outputText(component.description);
+    for (let component of current_room.components) {
+        output_text(component.description);
     }
-    topRightElement.textContent = currentRoom.location;
+    top_right_element.textContent = current_room.location;
 }
 
-function roomEscapable() {
-    for (let component of currentRoom.components) {
+function room_escapable() {
+    for (let component of current_room.components) {
         if (component instanceof Enemy) {
             if (!component.escapable) {
-                outputText("You cannot run away!");
+                output_text("You cannot run away!");
                 return false;
             }
         }
@@ -509,537 +413,537 @@ function roomEscapable() {
     return true;
 }
 
-function updateEnemies() {
-    for (let enemy of currentRoom.components) {
+function update_enemies() {
+    for (let enemy of current_room.components) {
         if (enemy instanceof Enemy) {
-            enemy.turnsInteracted++;
-            // console.log("Attack Time:" + enemy.attackTime);
-            // console.log("Turns Interacted: " + enemy.turnsInteracted);
-            if (enemy.attackTime - enemy.turnsInteracted == 1) {
-                outputText("The " + getName(enemy) + " is preparing its attack.");
+            enemy.turns_interacted++;
+            // console.log("Attack Time:" + enemy.attack_time);
+            // console.log("Turns Interacted: " + enemy.turns_interacted);
+            if (enemy.attack_time - enemy.turns_interacted == 1) {
+                output_text("The " + get_name(enemy) + " is preparing its attack.");
             }
-            if (enemy.turnsInteracted >= enemy.attackTime && enemy.attackTime != -1) {   //-1 represents an enemy that does not attack. Too lazy to do a different way for now.
-                attackPlayer(enemy);
-                enemy.turnsInteracted = 0;
+            if (enemy.turns_interacted >= enemy.attack_time && enemy.attack_time != -1) {   //-1 represents an enemy that does not attack. Too lazy to do a different way for now.
+                attack_player(enemy);
+                enemy.turns_interacted = 0;
                 
             }
         }
     }
-    dodgeCooldown--;
+    dodge_cooldown--;
     dodge = false;  //Disables dodge after attack process finishes to ensure dodge lasts for only one turn
 }
 
-//Don't forget to updateEnemies after each successful command (if necessary).
-function handleAction(words) {
+//Don't forget to update_enemies after each successful command (if necessary).
+function handle_action(words) {
     let verb = words[0];
     switch (verb) {
         case 'fight':
-            parseAttack(words);
+            parse_attack(words);
         break;
         case 'attack':
-            parseAttack(words);
+            parse_attack(words);
         break;
         case 'hit':
-            parseAttack(words);
+            parse_attack(words);
         break;
         case 'slash':
-            parseAttack(words);
+            parse_attack(words);
         break;
         case 'stab':
-            parseAttack(words);
+            parse_attack(words);
         break;
         case 'swing':
-            parseSwing(words);
+            parse_swing(words);
         break;
         case 'punch':
-            parsePunch(words);
+            parse_punch(words);
         break;
         case 'dodge':
-            parseDodge(words);
+            parse_dodge(words);
         break;
         case 'look':
-            parseLook(words);
+            parse_look(words);
         break;
         case 'grab':
-            return parseGrab(words);
+            return parse_grab(words);
         case 'pick':
-            return parseGrab(words);
+            return parse_grab(words);
         case 'drop':
-            return parseDrop(words);
+            return parse_drop(words);
         case 'wait':
-            return parseWait(words);
+            return parse_wait(words);
         case 'inventory':
-            parseInventory(words);
+            parse_inventory(words);
         break;
         case 'help':
-            parseHelp(words);
+            parse_help(words);
         break;
         case 'info':
-            parseInfo(words);
+            parse_info(words);
         break;
         case 'stop':
-            parseStop(words);
+            parse_stop(words);
         break;
         case 'start':
-            parseStart(words);
+            parse_start(words);
         break;
         case 'play':
-            parseStart(words);
+            parse_start(words);
         break;
         case 'eat':
-            return parseConsume(words);
+            return parse_consume(words);
         case 'consume':
-            return parseConsume(words);
+            return parse_consume(words);
         case 'drink':
-            return parseConsume(words);
+            return parse_consume(words);
         case 'block':
-            parseBlock(words);
+            parse_block(words);
         break;
     }
     return false;
 }
 
-function parseGrab(words) {
+function parse_grab(words) {
     if (words[0] == "pick" && words[1] == "up") {
         words.splice(1, 1);
-        return parseGrab(words);
+        return parse_grab(words);
     } else if (words[0] == "pick" && words[2] == "up") {
         words.splice(2,2);
-        return parseGrab(words);
+        return parse_grab(words);
     } else {
-        let correctComponent = findComponent(currentRoom.components,words[1]);
-        if (correctComponent != null) {
+        let correct_component = find_component(current_room.components,words[1]);
+        if (correct_component != null) {
             if (words.length > 2) {
-                outputText("I only understood you as far as " + words[0] + " " + words[1]);
+                output_text("I only understood you as far as " + words[0] + " " + words[1]);
             } else {
-                if (correctComponent instanceof Item) {
-                    outputText("You picked up the " + words[1] + ".");
-                    inventory.push(returnItem(currentRoom.components.splice(currentRoom.components.indexOf(correctComponent),1)));
-                    updateEnemies();
+                if (correct_component instanceof Item) {
+                    output_text("You picked up the " + words[1] + ".");
+                    inventory.push(return_item(current_room.components.splice(current_room.components.indexOf(correct_component),1)));
+                    update_enemies();
                     return true;
                 } else {
-                    outputText("You cannot pick that up.");
+                    output_text("You cannot pick that up.");
                 }
             }
         } else {
             if (words.length > 1) {
-                outputText("I only understood you as far as " + words[0] + ".");
+                output_text("I only understood you as far as " + words[0] + ".");
             } else {
                 previous_verb = words[0];
-                outputText("What do you want to pick up?");
+                output_text("What do you want to pick up?");
             }
         }
     }
     return false;
 }
 
-function parseDrop(words) {
-    let correctComponent = searchInventory(words[1]);
-    if (correctComponent != null) {
+function parse_drop(words) {
+    let correct_component = search_inventory(words[1]);  // TODO: this does nothing rn, there is no search_inventory function
+    if (correct_component != null) {
         if (words.length > 2) {
-            outputText("I only understood you as far as drop " + correctComponent.name.toLowerCase() + ".")
+            output_text("I only understood you as far as drop " + correct_component.name.toLowerCase() + ".")
         } else {                 //Successful command
-            outputText("You dropped the " + correctComponent.name.toLowerCase() + ".");
-            currentRoom.components.push(returnItem(inventory.splice(inventory.indexOf(correctComponent),1))); 
-            updateEnemies();
+            output_text("You dropped the " + correct_component.name.toLowerCase() + ".");
+            current_room.components.push(return_item(inventory.splice(inventory.indexOf(correct_component),1))); 
+            update_enemies();
             return true;
         }
     } else {
         if (words.length == 2) {
-            outputText("You do not possess " + words[1] + ".");
+            output_text("You do not possess " + words[1] + ".");
         } else if (words.length > 2) {
-            outputText("I only understood you as far as drop.");
+            output_text("I only understood you as far as drop.");
         } else {
             previous_verb = "drop";
-            outputText("What do you want to drop?");
+            output_text("What do you want to drop?");
         }
     }
     return false;
 }
  
-function parseLook(words) {
+function parse_look(words) {
     if (words.length > 1) {
         if (words[1] == "around") {
             words.splice(1,1);
-            parseLook(words);
+            parse_look(words);
         } else {
-            outputText("I only understood you as far as look.");
+            output_text("I only understood you as far as look.");
         }
     } else {
-        outputText(currentRoom.location);
-        outputText(currentRoom.description);
-        for (let component of currentRoom.components) {
-            outputText(component.description);
+        output_text(current_room.location);
+        output_text(current_room.description);
+        for (let component of current_room.components) {
+            output_text(component.description);
         }
     }
 }
 
-function parseDodge(words) {
+function parse_dodge(words) {
     if (words.length > 1) {
-        outputText("I only understood you as far as dodge.");
+        output_text("I only understood you as far as dodge.");
     } else {
-        if (dodgeCooldown > 0) {
-            outputText("You cannot dodge right now.");
+        if (dodge_cooldown > 0) {
+            output_text("You cannot dodge right now.");
         } else {
-            let dodgeCheck = Math.ceil(Math.random() * 10)
-            let dodgeValue = Math.ceil(Math.random() * 5 + luck);   //Luck affects how likely you are to dodge
-            if (dodgeValue > dodgeCheck) {
+            let dodge_check = Math.ceil(Math.random() * 10)
+            let dodge_value = Math.ceil(Math.random() * 5 + luck);   //Luck affects how likely you are to dodge
+            if (dodge_value > dodge_check) {
                 dodge = true;
             } else {
-                outputText("You failed to dodge!")
+                output_text("You failed to dodge!")
             }
-            dodgeCooldown = 3;
-            updateEnemies();
+            dodge_cooldown = 3;
+            update_enemies();
         }
     }
 }
 
-function parseWait(words) {
+function parse_wait(words) {
     if (words.length > 1) {
-        outputText("I only understood you as far as wait.");
+        output_text("I only understood you as far as wait.");
     } else {
         let result = Math.ceil(Math.random() * 100);
         if (result > 90)
-            outputText("Time passes. You ponder your existence and the existence of the universe. You are not sure what to do with yourself.");
+            output_text("Time passes. You ponder your existence and the existence of the universe. You are not sure what to do with yourself.");
         else if (result > 50)
-            outputText("You wait. Silently.");
+            output_text("You wait. Silently.");
         else
-            outputText("Time passes.");
-        updateEnemies();
+            output_text("Time passes.");
+        update_enemies();
     }
 }
 
-function parseInventory(words) {
+function parse_inventory(words) {
     if (words.length > 1) {
-        outputText("I only understood you as far as wait.");
+        output_text("I only understood you as far as wait.");
     } else {
         if (inventory.length == 0) {
-            outputText("Your inventory is currently empty.");
+            output_text("Your inventory is currently empty.");
         } else {
             for (let i = 0; i < inventory.length; i++) {
-                outputText(inventory[i].name);
+                output_text(inventory[i].name);
             }
         }
     }
 }
 
-function parseAttack(words) {
+function parse_attack(words) {
     if (words.length > 1) {
         let target = null;
         let weapon = null;
-        if (detectComponent(currentRoom.components,words[1])) {
-            target = findComponent(currentRoom.components, words[1]);
+        if (detect_component(current_room.components,words[1])) {
+            target = find_component(current_room.components, words[1]);
             if (target instanceof Enemy) {
                 if (words.length < 3) {
-                    outputText("What do you want to attack the " + getName(target) + " with?");
+                    output_text("What do you want to attack the " + get_name(target) + " with?");
                     previous_verb = "attack";
                     previous_component1 = target.name;
                 } else if (words.length == 3) {
                     if (words[2] == "with" || words[2] == "using") {
                         words.splice(2,1);
-                        parseAttack(words);
+                        parse_attack(words);
                     } else {
-                        if (detectComponent(inventory, words[2])) {
-                            weapon = findComponent(inventory, words[2]);
+                        if (detect_component(inventory, words[2])) {
+                            weapon = find_component(inventory, words[2]);
                             if (weapon instanceof Weapon) {
-                                attackEnemy(target, weapon);
-                                updateEnemies();  
+                                attack_enemy(target, weapon);
+                                update_enemies();  
                             } else {
-                                outputText("You cannot attack with that!");
+                                output_text("You cannot attack with that!");
                             }
                         } else if (words[2] == "fist" || words[2] == "fists" || words[2] == "feet" || words[2] == "foot" || words[2] == "body" || words[2] == "self" || words[2] == "player") {
                             let dummy = new Weapon("Body",1);
-                            attackEnemy(target,dummy);
-                            updateEnemies();
+                            attack_enemy(target,dummy);
+                            update_enemies();
                             
                         } else {
-                            outputText("You do not have that!");
+                            output_text("You do not have that!");
                         }
                     }
                 } else if (words.length > 3) {
                     if (words[2] == "with" || words[2] == "using") {
                         words.splice(2,1);
-                        parseAttack(words);
+                        parse_attack(words);
                     } else {
-                        outputText("What are you even saying?");
+                        output_text("What are you even saying?");
                     }
                 }
             } else {
-                outputText("You cannot attack that.");
+                output_text("You cannot attack that.");
             }
         } else {
-            outputText("There is no " + words[1] + " here.");
+            output_text("There is no " + words[1] + " here.");
         }
     } else {
-        outputText("What do you want to attack?");
+        output_text("What do you want to attack?");
         previous_verb = "attack";
     }
     
 }
 
-function parseSwing(words) {
+function parse_swing(words) {
     if (words.length > 1) {
         let target = null;
         let weapon = null;
-        if (detectComponent(inventory, words[1]) || words[1] == "fist" || words[1] == "fists") {
+        if (detect_component(inventory, words[1]) || words[1] == "fist" || words[1] == "fists") {
             if (words[1] == "fist" || words[1] == "fists") {
                 weapon = new Weapon("Body",1);
             } else {
-                weapon = findComponent(inventory, words[1]);
+                weapon = find_component(inventory, words[1]);
             }
             if (words.length < 3) {
                 previous_verb = "swing";
                 previous_component1 = weapon.name;
-                outputText("What do you want to swing the " + getName(weapon) + " at?");
+                output_text("What do you want to swing the " + get_name(weapon) + " at?");
             } else if (words.length == 3) {
-                if (detectComponent(currentRoom.components,words[2])) {
-                    target = findComponent(currentRoom.components, words[2]);
+                if (detect_component(current_room.components,words[2])) {
+                    target = find_component(current_room.components, words[2]);
                     if (target instanceof Enemy || target instanceof CustomEnemy) {
-                        attackEnemy(target, weapon);
-                        updateEnemies();
+                        attack_enemy(target, weapon);
+                        update_enemies();
                     } else {
-                        outputText("You cannot attack that.");
+                        output_text("You cannot attack that.");
                     }
                 } else {
-                    outputText("There is no " + words[2] + " here.");
+                    output_text("There is no " + words[2] + " here.");
                 } 
             } else if (words.length > 3) {
                 if (words[2] == "at") {
                     words.splice(2,1);
-                    parseSwing(words);
+                    parse_swing(words);
                 } else {
-                    outputText("What are you even saying?");
+                    output_text("What are you even saying?");
                 }
             }
         } else{
-            outputText("You do not have that!");
+            output_text("You do not have that!");
         }
     } else {
-        outputText("What do you want to swing?");
+        output_text("What do you want to swing?");
         previous_verb = "swing";
     }
 }
 
-function parsePunch(words) {
+function parse_punch(words) {
     if (words.length == 1) {
-        outputText("What do you want to punch?");
+        output_text("What do you want to punch?");
         previous_verb = "punch";
     } else if (words.length == 2) {
         words.push("fist");
-        parseAttack(words);
+        parse_attack(words);
     } else {
-        outputText("What are you even saying?");
+        output_text("What are you even saying?");
     }
 }
 
-function parseHelp(words) {
+function parse_help(words) {
     if (words.length > 1) {
-        outputText("I only understood you as far as help.");
+        output_text("I only understood you as far as help.");
     } else {
-        if (!(actionsPerformed.includes("grab") || actionsPerformed.includes("pick") )) {
-            outputText("Try picking something up.")
-        } else if (!(actionsPerformed.includes("attack") || actionsPerformed.includes("stab") || actionsPerformed.includes("hit") || actionsPerformed.includes("swing") || actionsPerformed.includes("slash") || actionsPerformed.includes("fight"))) {
-            outputText("You should try attacking something.");
-        } else if (!actionsPerformed.includes("dodge")) {
-            outputText("Have you tried dodging? Man it is awesome. It does take some luck, but it is totally worth trying.");
-        } else if (!(actionsPerformed.includes("north") || actionsPerformed.includes("northeast") || actionsPerformed.includes("east") || actionsPerformed.includes("southeast") || actionsPerformed.includes("south") || actionsPerformed.includes("southwest") || actionsPerformed.includes("west") || actionsPerformed.includes("northwest") || actionsPerformed.includes("west") || actionsPerformed.includes("go") || actionsPerformed.includes("walk") || actionsPerformed.includes("run") || actionsPerformed.includes("travel") || actionsPerformed.includes("head") || actionsPerformed.includes("move"))) {
-            outputText("If you are still having trouble traversing, try using cardinal and ordinal directions.");
+        if (!(actions_performed.includes("grab") || actions_performed.includes("pick") )) {
+            output_text("Try picking something up.")
+        } else if (!(actions_performed.includes("attack") || actions_performed.includes("stab") || actions_performed.includes("hit") || actions_performed.includes("swing") || actions_performed.includes("slash") || actions_performed.includes("fight"))) {
+            output_text("You should try attacking something.");
+        } else if (!actions_performed.includes("dodge")) {
+            output_text("Have you tried dodging? Man it is awesome. It does take some luck, but it is totally worth trying.");
+        } else if (!(actions_performed.includes("north") || actions_performed.includes("northeast") || actions_performed.includes("east") || actions_performed.includes("southeast") || actions_performed.includes("south") || actions_performed.includes("southwest") || actions_performed.includes("west") || actions_performed.includes("northwest") || actions_performed.includes("west") || actions_performed.includes("go") || actions_performed.includes("walk") || actions_performed.includes("run") || actions_performed.includes("travel") || actions_performed.includes("head") || actions_performed.includes("move"))) {
+            output_text("If you are still having trouble traversing, try using cardinal and ordinal directions.");
         } else {
-            outputText("You should try exploring a bit more.");
+            output_text("You should try exploring a bit more.");
         }
     }
 }
 
-function parseInfo(words) {
+function parse_info(words) {
     if (words.length > 1) {
-        outputText("I only understood you as far as info.");
+        output_text("I only understood you as far as info.");
     } else {
-        outputText("Mirenalt Nudgeon is a terminal dungeon where the player must learn by playing and win by learning. A wonderful and confusing land awaits you in the world of Merinalt.");
+        output_text("Mirenalt Nudgeon is a terminal dungeon where the player must learn by playing and win by learning. A wonderful and confusing land awaits you in the world of Merinalt.");
     }
 }
 
-function parseStop(words) {
+function parse_stop(words) {
     if (words.length == 1) {
         previous_verb = "stop";
-        outputText("What would you like to stop?");
+        output_text("What would you like to stop?");
     } else if (words.length == 2) {
         if (words[1] == 'sound' || words[1] == 'music') {
             if (audio != null) {
-                outputText("Music has stopped.");
+                output_text("Music has stopped.");
                 audio.pause();
             }
         } else if (words[1] == 'time') {
-            outputText("Time has successfully stopped until your next action.");
+            output_text("Time has successfully stopped until your next action.");
         } else {
-            outputText("I only understood you as far as stop.");
+            output_text("I only understood you as far as stop.");
         }
     } else {
         if (words[1] == 'sound' || words[1] == 'music') {
-            outputText("I only understood you as far as stop " +words[1]+ ".");
+            output_text("I only understood you as far as stop " +words[1]+ ".");
         } else if (words[1] == 'time') {
-            outputText("I only understood you as far as stop time.");
+            output_text("I only understood you as far as stop time.");
         } else {
-            outputText("I only understood you as far as stop.");
+            output_text("I only understood you as far as stop.");
         }
     }
 }
 
-function parseStart(words) { 
+function parse_start(words) { 
     if (words.length == 1) {
         previous_verb = "play";
-        outputText("What would you like to play?");
+        output_text("What would you like to play?");
     } else if (words.length == 2) {
         if (words[1] == "sound" || words[1] == "music") {
             if (audio != null) {
-                outputText("Music has started.");
+                output_text("Music has started.");
                 audio.play();
             }
         } else if (words[1] == "mirenalt") {
-            outputText("You are already playing that game!");
+            output_text("You are already playing that game!");
         } else {
-            outputText("I only understood you as far as " + words[0] + ".");
+            output_text("I only understood you as far as " + words[0] + ".");
         }
     } else if (words.length == 3) {
         if (words[1] == "mirenalt" && words[2] == "nudgeon") {
-            outputText("You are already playing that game!");
+            output_text("You are already playing that game!");
         } else {
             if (words[1] == "mirenalt") {
-                outputText("I only understood you as far as play mirenalt.");
+                output_text("I only understood you as far as play mirenalt.");
             } else {
-                outputText("I only understood you as far as play.");
+                output_text("I only understood you as far as play.");
             }
         }
     } else {
-        outputText("I only understood you as far as play.");
+        output_text("I only understood you as far as play.");
     }
 }
 
-function parseConsume(words) {
+function parse_consume(words) {
     if (words.length == 1) {
-        outputText("What do you want to consume?");
+        output_text("What do you want to consume?");
         previous_verb = "consume";
     } else {
-        let food = findComponent(inventory, words[1]);
+        let food = find_component(inventory, words[1]);
         if (food != null) {
             if (food instanceof Consumable) {
                 if (food.type == "eat") {
                     if (words[0] == "drink") {
-                        outputText("You cannot drink that.");
+                        output_text("You cannot drink that.");
                     } else {
                         if (words.length > 2) {
-                            outputText("I only understood you as far as " + words[0] + " " + words[1] + ".");
+                            output_text("I only understood you as far as " + words[0] + " " + words[1] + ".");
                         } else {
-                            updateEnemies();
+                            update_enemies();
                             return consume(food);
                         }
                     }
                 } else {
                     if (words[0] == "eat") {
-                        outputText("You cannot eat that.");
+                        output_text("You cannot eat that.");
                     } else {
                         if (words.length > 2) {
-                            outputText("I only understood you as far as " + words[0] + " " + words[1] + ".");
+                            output_text("I only understood you as far as " + words[0] + " " + words[1] + ".");
                         } else {
-                            updateEnemies();
+                            update_enemies();
                             return consume(food);
                         }
                     }
                 }
             } else {
-                outputText("You cannot consume that!");
+                output_text("You cannot consume that!");
             }
         } else {
-            outputText("You do not have that!");
+            output_text("You do not have that!");
         }
     }
     return false;
 }
 
-function parseBlock(words) {
-    if (hasEnemies()) {
+function parse_block(words) {
+    if (has_enemies()) {
         if (words.length == 1) {
-            outputText("What do you want to block with?");
+            output_text("What do you want to block with?");
             previous_verb = "block";
         } else if (words.length == 2) {
-            let item = findComponent(inventory, words[1]);
+            let item = find_component(inventory, words[1]);
             if (item != null) {
                 if (item instanceof Weapon) {
                     block = item.block;
-                    updateEnemies();
+                    update_enemies();
                     return true;
                 } else {
-                    outputText("You cannot block with that.");
+                    output_text("You cannot block with that.");
                 }
             } else {
-                outputText("You do not have that!");
+                output_text("You do not have that!");
             }
         } else {
             if (words[1] == "with") {
                 words.splice(1,1);
-                parseBlock(words);
+                parse_block(words);
             } else {
-                outputText("I only understood you as far as block.");
+                output_text("I only understood you as far as block.");
             }
         }
     } else {
-        outputText("There are no enemies to block!");
+        output_text("There are no enemies to block!");
     }
 }
 
-function getName(component) {
+function get_name(component) {
     return (typeof component.names === 'string') ? component.name.toLowerCase() : component.names[0].toLowerCase();
 }
 
-function hasEnemies() {
-    return currentRoom.components.some((component) => component instanceof Enemy);
+function has_enemies() {
+    return current_room.components.some((component) => component instanceof Enemy);
 }
 
 function consume(item) {
     health += item.health;
     inventory.splice(inventory.indexOf(item),1);
-    outputText("You successfully consumed the " + item.name.toLowerCase() + ".");
+    output_text("You successfully consumed the " + item.name.toLowerCase() + ".");
     if (item.health > 0) {
-        outputText("It had a positive effect on your health!");
+        output_text("It had a positive effect on your health!");
     } else if (item.health < 0) {
-        outputText("It had a negative effect on your health!");
+        output_text("It had a negative effect on your health!");
     }
     return true;
 }
 
-function attackEnemy(enemy, weapon) {
+function attack_enemy(enemy, weapon) {
     if (weapon.damage > enemy.defense) {
         enemy.health = enemy.health + (enemy.defense - weapon.damage);
         if (enemy.health < 0) {
-            outputText("You killed the " + enemy.name.toLowerCase() + ".");
-            currentRoom.components.pop(enemy);
+            output_text("You killed the " + enemy.name.toLowerCase() + ".");
+            current_room.components.pop(enemy);
         } else {
-            outputText("The attack landed!");
+            output_text("The attack landed!");
         }
     } else {
-        outputText("The attack was ineffective.");
+        output_text("The attack was ineffective.");
     }
 }
 
-function attackPlayer(enemy) {
+function attack_player(enemy) {
     if (!dodge) {
-        outputText("The " + enemy.name.toLowerCase() + " attacked you!");
+        output_text("The " + enemy.name.toLowerCase() + " attacked you!");
         if (block > 0) {
             if (enemy.strength > (block + defense)) {
                 health -= enemy.strength;
-                outputText("The block was ineffective.");
+                output_text("The block was ineffective.");
             } else {
-                outputText("The block was successful.");
+                output_text("The block was successful.");
             }
             block = 0;
         } else {
             if (enemy.strength > defense) {
                 health = health + (defense - enemy.strength);
             } else {
-                outputText("It had no effect.");
+                output_text("It had no effect.");
             }
         }
         if (health <= 0) {
-            outputText("You died. Game over.");
+            output_text("You died. Game over.");
             var input = document.getElementById("terminal-input");
             if (input) {
                 input.remove();
@@ -1048,19 +952,19 @@ function attackPlayer(enemy) {
             }
         }
     } else {
-        outputText("You successfully dodged the attack!");
+        output_text("You successfully dodged the attack!");
     }
 }
 
-function findComponent(components, name) {
+function find_component(components, name) {
     for (let component of components) {
         if (typeof component.names === 'string') {
             if (component.names.toLowerCase() == name) {
                 return component;
             }
         } else {
-            for (let componentName of component.names) {
-                if (componentName.toLowerCase() == name) {
+            for (let component_name of component.names) {
+                if (component_name.toLowerCase() == name) {
                     return component;
                 }
             }
@@ -1069,13 +973,13 @@ function findComponent(components, name) {
     return null;
 }
 
-function detectComponent(components, name) {
+function detect_component(components, name) {
     for (let component of components) {
         if (typeof component.names === 'string') {
             if (component.names.toLowerCase() == name) return true;
         } else {
-            for (let componentName of component.names) {
-                if (componentName.toLowerCase() == name) {
+            for (let component_name of component.names) {
+                if (component_name.toLowerCase() == name) {
                     return true;
                 }
             }
@@ -1090,81 +994,81 @@ function detectComponent(components, name) {
 * xdir -> Direction to y relative to x |
 * ydir -> Direction to x relative to y
 */
-function connectRooms(x, y, xdir, ydir) {
-    x.connectedRooms.push(y);
+function connect_rooms(x, y, xdir, ydir) {
+    x.connected_rooms.push(y);
     x.directions.push(xdir)
-    y.connectedRooms.push(x);
+    y.connected_rooms.push(x);
     y.directions.push(ydir)
 }
 
-function removeRoom(doorRoom) {
-    const room1 = doorRoom.connectedRooms[0];
-    const room2 = doorRoom.connectedRooms[1];
+function remove_room(door_room) {
+    const room1 = door_room.connected_rooms[0];
+    const room2 = door_room.connected_rooms[1];
     if (room2 !== undefined) {
-        room1.connectedRooms[room1.connectedRooms.indexOf(doorRoom)] = room2;
-        room2.connectedRooms[room2.connectedRooms.indexOf(doorRoom)] = room1;
-        changeRoom(1);
+        room1.connected_rooms[room1.connected_rooms.indexOf(door_room)] = room2;
+        room2.connected_rooms[room2.connected_rooms.indexOf(door_room)] = room1;
+        change_room(1);
     } else {
-        room1.connectedRooms.splice(room1.connectedRooms.indexOf(doorRoom),1);
-        room1.directions.splice(room1.connectedRooms.indexOf(doorRoom),1);
-        changeRoom(0);
+        room1.connected_rooms.splice(room1.connected_rooms.indexOf(door_room),1);
+        room1.directions.splice(room1.connected_rooms.indexOf(door_room),1);
+        change_room(0);
     }
 }
 
-function outputText(txt) {
+function output_text(txt) {
     const p = document.createElement("p");
     p.innerHTML = txt;
-    terminalOutput.appendChild(p);
+    terminal_output.appendChild(p);
     window.scrollTo(0, document.body.scrollHeight);
-    terminalCommand.value = "";
+    terminal_command.value = "";
 }
 
-function handleMusic() {
-    musicPlayed = true;
-    var song = new Audio(playlist[playlistIndex]);
+function handle_music() {
+    music_played = true;
+    var song = new Audio(playlist[playlist_index]);
     song.volume = 0.1;
     audio = song;
-    playMusic(song);
-    playlistIndex++;
-    if (playlistIndex > playlist.length-1) playlistIndex = 0;
+    play_music(song);
+    playlist_index++;
+    if (playlist_index > playlist.length-1) playlist_index = 0;
 }
 
-function playMusic(song) {
-    if (musicPlayed) {
+function play_music(song) {
+    if (music_played) {
         song.play();
-        song.addEventListener('ended', handleMusic);
-        document.removeEventListener('click', handleMusic);
+        song.addEventListener('ended', handle_music);
+        document.removeEventListener('click', handle_music);
     }
 }
 
 window.onload = (event) => {
-    initializeRooms();
-    outputText(currentRoom.location);
-    outputText(currentRoom.description);
-    for (let component of currentRoom.components) {
-        outputText(component.description);
+    initialize_rooms();
+    output_text(current_room.location);
+    output_text(current_room.description);
+    for (let component of current_room.components) {
+        output_text(component.description);
     }
-    currentRoom.entered = true;
-    document.addEventListener('click', handleMusic);
+    current_room.entered = true;
+    document.addEventListener('click', handle_music);
 }
 
-const terminalOutput = document.getElementById("terminal-output");
-const terminalCommand = document.getElementById("terminal-command");
-const topRightElement = document.getElementById("location");
+const terminal_output = document.getElementById("terminal-output");
+const terminal_command = document.getElementById("terminal-command");
+const top_right_element = document.getElementById("location");
 
-topRightElement.textContent = "Brooke Road";
+top_right_element.textContent = "Brooke Road";
 
-terminalCommand.addEventListener("keydown", e => checkEnter(e));
+terminal_command.addEventListener("keydown", e => checkEnter(e));
 
 function checkEnter(k) {
     if (k.keyCode==13) {
-        const command = terminalCommand.value;
-        outputText(command);
-        terminalCommand.value = "";
+        const command = terminal_command.value;
+        output_text(command);
+        terminal_command.value = "";
         if (command.length > 164) {
-            outputText("I am sorry, but that command is too long.")
+            output_text("I am sorry, but that command is too long.")
         } else {
-            parse(separateCommand(command)); 
+            parse(separate_command(command)); 
         }
     }
 }
