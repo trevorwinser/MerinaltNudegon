@@ -1,6 +1,6 @@
-# Merinalt Nudgeon
+# Merinalt Nudegon
 
-Welcome to the MerinaltNudgeon repository! 
+Welcome to the MerinaltNudegon repository! 
 
 Here you can find the source code for the web game Merinalt Nudgeon, a terminal dungeon where the only way to interact with the game is through commands!
 
