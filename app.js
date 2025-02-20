@@ -1,13 +1,19 @@
 import { Room, CustomRoom, Component, Enemy, NPC, Item, CustomItem, Consumable, Weapon } from './classes.js';
 import { parse_start } from './actions/start.js';
 import { parse_stop } from './actions/stop.js';
+import { parse_attack, parse_swing, parse_punch } from './actions/attack.js';
+import { parse_grab } from './actions/grab.js';
 
-var current_room = null;
+
+export var current_room = null;
 var rooms = [];
-var inventory = [];
+export var inventory = [];
 var previous_verb = null;
-var previous_component1 = null;
-export var dictionary = ["fight","attack","hit","swing","slash","stab","punch","dodge","look","grab","pick","drop","inventory","wait","help","info","stop","start","play","eat","drink","consume","block"];
+export function setPreviousVerb(value) {
+    previous_verb = value;
+}
+export var previous_component = null;
+export var dictionary = ["fight","attack","hit","swing","slash","slash","stab","punch","dodge","look","grab","pick","drop","inventory","wait","help","info","stop","start","play","eat","drink","consume","block"];
 var movement_dictionary = ["go","walk","run","travel","head","move","north","northeast","east","southeast","south","southwest","west","northwest","climb","jump"];
 dictionary = dictionary.concat(movement_dictionary);
 var health = 10;
@@ -219,7 +225,7 @@ function add_component(room, component) {
 }
 
 //Specific case when attempting to add elements of a list of size 1 to another list.
-function return_item(list) {
+export function return_item(list) {
     return list[0];
 }
 
@@ -231,9 +237,9 @@ function separate_command(sentence) {
 
 function parse(words) {
     if (words[0] == 'a') words.splice(0,1);
-    if (previous_component1 != null) {
-        words.splice(0, 0, previous_component1.toLowerCase());
-        previous_component1 = null;
+    if (previous_component != null) {
+        words.splice(0, 0, previous_component.toLowerCase());
+        previous_component = null;
     }
     if (previous_verb != null) {
         words.splice(0, 0, previous_verb);
@@ -415,7 +421,7 @@ function room_escapable() {
     return true;
 }
 
-function update_enemies() {
+export function update_enemies() {
     for (let enemy of current_room.components) {
         if (enemy instanceof Enemy) {
             enemy.turns_interacted++;
@@ -449,10 +455,13 @@ function handle_action(words) {
             parse_attack(words);
         break;
         case 'slash':
-            parse_attack(words);
+            parse_swing(words);
+        break;
+        case 'slice':
+            parse_swing(words);
         break;
         case 'stab':
-            parse_attack(words);
+            parse_swing(words);
         break;
         case 'swing':
             parse_swing(words);
@@ -505,42 +514,8 @@ function handle_action(words) {
     return false;
 }
 
-function parse_grab(words) {
-    if (words[0] == "pick" && words[1] == "up") {
-        words.splice(1, 1);
-        return parse_grab(words);
-    } else if (words[0] == "pick" && words[2] == "up") {
-        words.splice(2,2);
-        return parse_grab(words);
-    } else {
-        let correct_component = find_component(current_room.components,words[1]);
-        if (correct_component != null) {
-            if (words.length > 2) {
-                output_text("I only understood you as far as " + words[0] + " " + words[1]);
-            } else {
-                if (correct_component instanceof Item) {
-                    output_text("You picked up the " + words[1] + ".");
-                    inventory.push(return_item(current_room.components.splice(current_room.components.indexOf(correct_component),1)));
-                    update_enemies();
-                    return true;
-                } else {
-                    output_text("You cannot pick that up.");
-                }
-            }
-        } else {
-            if (words.length > 1) {
-                output_text("I only understood you as far as " + words[0] + ".");
-            } else {
-                previous_verb = words[0];
-                output_text("What do you want to pick up?");
-            }
-        }
-    }
-    return false;
-}
-
 function parse_drop(words) {
-    let correct_component = search_inventory(words[1]);  // TODO: this does nothing rn, there is no search_inventory function
+    let correct_component = find_component(inventory, words[1]);  // TODO: this does nothing rn, there is no search_inventory function
     if (correct_component != null) {
         if (words.length > 2) {
             output_text("I only understood you as far as drop " + correct_component.name.toLowerCase() + ".")
@@ -629,114 +604,7 @@ function parse_inventory(words) {
     }
 }
 
-function parse_attack(words) {
-    if (words.length > 1) {
-        let target = null;
-        let weapon = null;
-        if (detect_component(current_room.components,words[1])) {
-            target = find_component(current_room.components, words[1]);
-            if (target instanceof Enemy) {
-                if (words.length < 3) {
-                    output_text("What do you want to attack the " + get_name(target) + " with?");
-                    previous_verb = "attack";
-                    previous_component1 = target.name;
-                } else if (words.length == 3) {
-                    if (words[2] == "with" || words[2] == "using") {
-                        words.splice(2,1);
-                        parse_attack(words);
-                    } else {
-                        if (detect_component(inventory, words[2])) {
-                            weapon = find_component(inventory, words[2]);
-                            if (weapon instanceof Weapon) {
-                                attack_enemy(target, weapon);
-                                update_enemies();  
-                            } else {
-                                output_text("You cannot attack with that!");
-                            }
-                        } else if (words[2] == "fist" || words[2] == "fists" || words[2] == "feet" || words[2] == "foot" || words[2] == "body" || words[2] == "self" || words[2] == "player") {
-                            let dummy = new Weapon("Body",1);
-                            attack_enemy(target,dummy);
-                            update_enemies();
-                            
-                        } else {
-                            output_text("You do not have that!");
-                        }
-                    }
-                } else if (words.length > 3) {
-                    if (words[2] == "with" || words[2] == "using") {
-                        words.splice(2,1);
-                        parse_attack(words);
-                    } else {
-                        output_text("What are you even saying?");
-                    }
-                }
-            } else {
-                output_text("You cannot attack that.");
-            }
-        } else {
-            output_text("There is no " + words[1] + " here.");
-        }
-    } else {
-        output_text("What do you want to attack?");
-        previous_verb = "attack";
-    }
-    
-}
 
-function parse_swing(words) {
-    if (words.length > 1) {
-        let target = null;
-        let weapon = null;
-        if (detect_component(inventory, words[1]) || words[1] == "fist" || words[1] == "fists") {
-            if (words[1] == "fist" || words[1] == "fists") {
-                weapon = new Weapon("Body",1);
-            } else {
-                weapon = find_component(inventory, words[1]);
-            }
-            if (words.length < 3) {
-                previous_verb = "swing";
-                previous_component1 = weapon.name;
-                output_text("What do you want to swing the " + get_name(weapon) + " at?");
-            } else if (words.length == 3) {
-                if (detect_component(current_room.components,words[2])) {
-                    target = find_component(current_room.components, words[2]);
-                    if (target instanceof Enemy || target instanceof CustomEnemy) {
-                        attack_enemy(target, weapon);
-                        update_enemies();
-                    } else {
-                        output_text("You cannot attack that.");
-                    }
-                } else {
-                    output_text("There is no " + words[2] + " here.");
-                } 
-            } else if (words.length > 3) {
-                if (words[2] == "at") {
-                    words.splice(2,1);
-                    parse_swing(words);
-                } else {
-                    output_text("What are you even saying?");
-                }
-            }
-        } else{
-            output_text("You do not have that!");
-        }
-    } else {
-        output_text("What do you want to swing?");
-        previous_verb = "swing";
-    }
-}
-
-function parse_punch(words) {
-    if (words.length == 1) {
-        output_text("What do you want to punch?");
-        previous_verb = "punch";
-    } else if (words.length == 2) {
-        words.push("fist");
-        parse_attack(words);
-    } else {
-        output_text("What are you even saying?");
-    }
-}
 
 function parse_help(words) {
     if (words.length > 1) {
@@ -856,19 +724,7 @@ function consume(item) {
     return true;
 }
 
-function attack_enemy(enemy, weapon) {
-    if (weapon.damage > enemy.defense) {
-        enemy.health = enemy.health + (enemy.defense - weapon.damage);
-        if (enemy.health < 0) {
-            output_text("You killed the " + enemy.name.toLowerCase() + ".");
-            current_room.components.pop(enemy);
-        } else {
-            output_text("The attack landed!");
-        }
-    } else {
-        output_text("The attack was ineffective.");
-    }
-}
+
 
 function attack_player(enemy) {
     if (!dodge) {
@@ -902,7 +758,7 @@ function attack_player(enemy) {
     }
 }
 
-function find_component(components, name) {
+export function find_component(components, name) {
     for (let component of components) {
         if (typeof component.names === 'string') {
             if (component.names.toLowerCase() == name) {
@@ -919,7 +775,7 @@ function find_component(components, name) {
     return null;
 }
 
-function detect_component(components, name) {
+export function detect_component(components, name) {
     for (let component of components) {
         if (typeof component.names === 'string') {
             if (component.names.toLowerCase() == name) return true;
@@ -969,6 +825,8 @@ export function output_text(txt) {
     terminal_command.value = "";
 }
 
+
+// TODO: Make music room, enemy, and event based. Properly.
 function handle_music() {
     music_played = true;
     var song = new Audio(playlist[playlist_index]);
