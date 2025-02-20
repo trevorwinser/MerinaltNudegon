@@ -1,7 +1,7 @@
 import { Room, CustomRoom, Component, Enemy, NPC, Item, CustomItem, Consumable, Weapon } from './classes.js';
 import { parse_start } from './actions/start.js';
 import { parse_stop } from './actions/stop.js';
-import { parse_attack, parse_swing, parse_punch } from './actions/attack.js';
+import { parse_attack } from './actions/attack.js';
 import { parse_grab } from './actions/grab.js';
 import { parse_drop } from './actions/drop.js';
 import { initialize_rooms } from './init.js';
@@ -27,9 +27,7 @@ export function set_previous_verb(verb) {
 }
 var previous_component = null;
 export function set_previous_component(component) {
-    if (component instanceof Component) {
-        previous_component = component;
-    }
+    previous_component = component;
 }
 export var dictionary = ["fight","attack","hit","swing","slash","slash","stab","punch","dodge","look","grab","pick","drop","inventory","wait","help","info","stop","start","play","eat","drink","consume","block"];
 var movement_dictionary = ["go","walk","run","travel","head","move","north","northeast","east","southeast","south","southwest","west","northwest","climb","jump"];
@@ -37,6 +35,9 @@ dictionary = dictionary.concat(movement_dictionary);
 var health = 10;
 var defense = 1;
 var block = 0;
+export function set_block(amount) {
+    block = amount;
+}
 var luck = 1;
 var dodge = false;
 var dodge_cooldown = 0;
@@ -274,19 +275,19 @@ function handle_action(words) {
             parse_attack(words);
             break;
         case 'slash':
-            parse_swing(words);
+            parse_attack(words);
             break;
         case 'slice':
-            parse_swing(words);
+            parse_attack(words);
             break;
         case 'stab':
-            parse_swing(words);
+            parse_attack(words);
             break;
         case 'swing':
-            parse_swing(words);
+            parse_attack(words);
             break;
         case 'punch':
-            parse_punch(words);
+            parse_attack(words);
             break;
         case 'dodge':
             parse_dodge(words);
@@ -473,37 +474,6 @@ function parse_consume(words) {
     return false;
 }
 
-function parse_block(words) {
-    if (has_enemies()) {
-        if (words.length == 1) {
-            output_text("What do you want to block with?");
-            previous_verb = "block";
-        } else if (words.length == 2) {
-            let item = find_component(inventory, words[1]);
-            if (item != null) {
-                if (item instanceof Weapon) {
-                    block = item.block;
-                    update_enemies();
-                    return true;
-                } else {
-                    output_text("You cannot block with that.");
-                }
-            } else {
-                output_text("You do not have that!");
-            }
-        } else {
-            if (words[1] == "with") {
-                words.splice(1,1);
-                parse_block(words);
-            } else {
-                output_text("I only understood you as far as block.");
-            }
-        }
-    } else {
-        output_text("There are no enemies to block!");
-    }
-}
-
 export function get_name(component) {
     return (typeof component.names === 'string') ? component.name.toLowerCase() : component.names[0].toLowerCase();
 }
@@ -536,7 +506,7 @@ function attack_player(enemy) {
             } else {
                 output_text("The block was successful.");
             }
-            block = 0;
+            block = block + defense - enemy.strength;
         } else {
             if (enemy.strength > defense) {
                 health = health + (defense - enemy.strength);

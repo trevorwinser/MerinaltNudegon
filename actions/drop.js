@@ -23,7 +23,7 @@ export function parse_drop(words) {
     output_text(`You dropped the ${item_name.toLowerCase()}.`);
 
     remove_from_inventory(item);
-    // Add item back to the room
+
     current_room.add_component(item);
     
     update_enemies();

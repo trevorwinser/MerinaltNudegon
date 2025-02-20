@@ -1,4 +1,4 @@
-import { set_previous_verb, detect_component, find_component, output_text, update_enemies, current_room, inventory, get_name } from '../app.js';
+import { set_previous_verb, detect_component, find_component, output_text, update_enemies, current_room, inventory, get_name, set_previous_component } from '../app.js';
 import { Enemy, Weapon } from '../classes.js';
 
 function detect_weapon(word) {
@@ -32,7 +32,7 @@ function process_attack(target, weapon) {
 function parse_combat(words) {
     if (words.length < 2) {
         set_previous_verb(words[0]);
-        output_text("What do you want to do?"); // Incomplete command
+        output_text("What do you want to attack?"); // Incomplete command
         return;
     }
 
@@ -41,8 +41,7 @@ function parse_combat(words) {
     let weapon = null;
 
     if (!target) {
-        output_text("There is nothing to attack here.");
-        set_previous_verb(verb);
+        output_text("That target is not here.");
         return;
     }
 
@@ -57,7 +56,6 @@ function parse_combat(words) {
             }
             if (!weapon) {
                 output_text("You must swing a weapon!");
-                set_previous_verb(verb);
                 return;
             }
             break;
@@ -70,6 +68,7 @@ function parse_combat(words) {
             if (!weapon) {
                 output_text(`What do you want to attack the ${get_name(target)} with?`);
                 set_previous_verb(verb);
+                set_previous_component(get_name(target));
                 return;
             }
             break;
@@ -79,15 +78,7 @@ function parse_combat(words) {
 }
 
 export function parse_attack(words) {
-    parse_combat(["attack", ...words]);
-}
-
-export function parse_swing(words) {
-    parse_combat(["swing", ...words]);
-}
-
-export function parse_punch(words) {
-    parse_combat(["punch", ...words]);
+    parse_combat(words);
 }
 
 function attack_enemy(enemy, weapon) {
