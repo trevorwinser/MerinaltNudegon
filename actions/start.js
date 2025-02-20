@@ -1,11 +1,10 @@
-import { setPreviousVerb, output_text, audio } from '../app.js';
+import { set_previous_verb, output_text, audio } from '../app.js';
 
 export function parse_start(words) { 
     const [action, target, subAction] = words;
 
-    setPreviousVerb("start");
-
     if (words.length === 1) {
+        set_previous_verb("start");
         output_text(`What would you like to ${action}?`);
     } else if (words.length === 2) {
         if (["sound", "music"].includes(target) && audio != null) {

@@ -4,6 +4,7 @@ export function parse_stop(words) {
     const [action, target] = words;
 
     if (words.length === 1) {
+        set_previous_verb("stop");
         output_text("What would you like to stop?");
     } else if (words.length === 2) {
         if (["sound", "music"].includes(target) && audio != null) {

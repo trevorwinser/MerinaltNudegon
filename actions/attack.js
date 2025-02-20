@@ -1,4 +1,4 @@
-import { detect_component, find_component, output_text, update_enemies, current_room, inventory } from '../app.js';
+import { set_previous_verb, detect_component, find_component, output_text, update_enemies, current_room, inventory, get_name } from '../app.js';
 import { Enemy, Weapon } from '../classes.js';
 
 function detect_weapon(word) {
@@ -31,16 +31,18 @@ function process_attack(target, weapon) {
 
 function parse_combat(words) {
     if (words.length < 2) {
-        output_text("What do you want to do?");
+        set_previous_verb(words[0]);
+        output_text("What do you want to do?"); // Incomplete command
         return;
     }
-    
+
     let verb = words[0];
     let target = detect_target(words.slice(1));
     let weapon = null;
 
     if (!target) {
         output_text("There is nothing to attack here.");
+        set_previous_verb(verb);
         return;
     }
 
@@ -55,21 +57,24 @@ function parse_combat(words) {
             }
             if (!weapon) {
                 output_text("You must swing a weapon!");
+                set_previous_verb(verb);
                 return;
             }
             break;
         case "attack":
         default:
             for (let word of words.slice(1)) {
-                if (word !== target.name.toLowerCase()) {
-                    weapon = detect_weapon(word);
-                    if (weapon) break;
-                }
+                weapon = detect_weapon(word);
+                if (weapon) break;
             }
-            if (!weapon) weapon = detect_weapon("fist");
+            if (!weapon) {
+                output_text(`What do you want to attack the ${get_name(target)} with?`);
+                set_previous_verb(verb);
+                return;
+            }
             break;
     }
-    
+
     process_attack(target, weapon);
 }
 
@@ -89,7 +94,7 @@ function attack_enemy(enemy, weapon) {
     if (weapon.damage > enemy.defense) {
         enemy.health -= (weapon.damage - enemy.defense);
         if (enemy.health <= 0) {
-            output_text(`You killed the ${enemy.name.toLowerCase()}.`);
+            output_text(`You killed the ${get_name(enemy)}.`);
             current_room.components = current_room.components.filter(c => c !== enemy);
         } else {
             output_text("The attack landed!");

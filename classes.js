@@ -12,6 +12,14 @@ export class Room {
     constructor(location) {
         this.location = location;
     }
+    remove_component(component) {
+        this.components.splice(this.components.indexOf(component), 1);
+    }
+    add_component(component) {
+        if (component instanceof Component) {
+            this.components.push(component);
+        }
+    }
 }
 
 export class CustomRoom extends Room {
@@ -39,11 +47,12 @@ export class Component {
     description;
     
     constructor(names) {
-        this.names = names;
         if (typeof names === 'string') {
             this.name = names;
+            this.names[0] = names;
         } else {
             this.name = names[0];
+            this.names = names;
         }
     }
 }
@@ -65,7 +74,7 @@ export class Enemy extends Component {
         this.strength = strength;
         this.attack_time = attack_time;
         this.type = type;
-    }  
+    }
 }
 
 export class NPC extends Component {
