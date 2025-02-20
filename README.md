@@ -1,4 +1,5 @@
 # Merinalt Nudegon
+*/ˈmɛrɪnɔːltˈnuːdeɪɡɒn/*
 
 Welcome to the MerinaltNudegon repository! 
 
